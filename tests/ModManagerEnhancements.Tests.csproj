@@ -4,5 +4,6 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>ModManagerEnhancements.Tests</AssemblyName>
   </PropertyGroup>
+  <ItemGroup><Compile Remove="UI\**\*.cs" /></ItemGroup>
   <ItemGroup><Compile Include="..\src\Core\**\*.cs" LinkBase="Core" /></ItemGroup>
 </Project>

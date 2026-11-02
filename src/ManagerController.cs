@@ -25,12 +25,15 @@ internal sealed class ManagerController
     private Border? details;
     private Button? all, refresh;
     private TrulyObservableCollection<SearchDirectory>? directories;
-    private ScanSession? session;
+    private ScanSession<ConflictReport>? session;
+    private ScanSession<DllInventory>? dllSession;
+    private DllInventory? dlls;
+    private Exception? dllFailure;
     private ConflictReport? report;
     private ModText text = new("en");
     private Exception? failure;
-    private string? selectedId, selectedName;
-    private bool mounted, dirty, renderDirty;
+    private readonly ModFilter filter = new();
+    private bool mounted, dirty, dllDirty, renderDirty;
     private float scanAt, rowsAt;
 
     internal ManagerController(ModMenuView view)
@@ -67,7 +70,8 @@ internal sealed class ManagerController
             wrapper.Children.Add(original);
             Grid.SetRow(details, 1); wrapper.Children.Add(details);
             page.RightPane = wrapper;
-            session = new ScanSession(new ConflictScanner().Scan, Plugin.Error);
+            session = new ScanSession<ConflictReport>(new ConflictScanner().Scan, Plugin.Error);
+            dllSession = new ScanSession<DllInventory>(new DllScanner().Scan, Plugin.Error);
             mounted = true;
             Plugin.Active = this;
             Observe(model.Directories);
@@ -87,14 +91,21 @@ internal sealed class ManagerController
             string baseGame = Path.Combine(Application.streamingAssetsPath, "original");
             var snapshot = directories!.Select(d => new ModSource(d.DirectoryInfo.FullName, d.Name, d.DirectoryInfo.FullName,
                 d.IsChecked, Plugin.SamePath(d.DirectoryInfo.FullName, baseGame))).ToArray();
-            if (selectedId != null && !snapshot.Any(d => ConflictReport.SameId(d.Id, selectedId)))
-            { selectedId = selectedName = null; Render(); }
+            if (filter.Id is string selectedId && !snapshot.Any(d => ConflictReport.SameId(d.Id, selectedId)))
+            { filter.Clear(); Render(); }
             session!.Request(snapshot);
+            if (dllDirty) { dllDirty = false; dllSession!.Request(snapshot); }
         }
         var outcome = session!.Poll();
         if (outcome != null && !dirty)
         {
             report = outcome.Report; failure = outcome.Error;
+            Render();
+        }
+        var dllOutcome = dllSession!.Poll();
+        if (dllOutcome != null && !dllDirty)
+        {
+            dlls = dllOutcome.Report; dllFailure = dllOutcome.Error;
             Render();
         }
         if (renderDirty || Time.realtimeSinceStartup >= rowsAt)
@@ -118,21 +129,25 @@ internal sealed class ManagerController
         Observe(directories!); Invalidate();
     }
     private void ItemChanged(object? sender, PropertyChangedEventArgs args)
-    { if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == "IsChecked" || args.PropertyName == "DirectoryInfo") Invalidate(); }
-    private void Invalidate()
+    {
+        if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == "DirectoryInfo") Invalidate();
+        else if (args.PropertyName == "IsChecked") Invalidate(inspectDlls: false);
+    }
+    private void Invalidate(bool inspectDlls = true)
     {
         dirty = true; scanAt = Time.realtimeSinceStartup + 0.2f;
+        if (inspectDlls) { dllDirty = true; dlls = null; dllFailure = null; }
         report = null; failure = null; Render();
     }
     private void Render()
     {
-        if (details != null) details.DataContext = new DetailsModel(text, report, selectedId, selectedName, failure);
+        if (details != null) details.DataContext = new DetailsModel(text, report, filter.Id, filter.Name, failure ?? dllFailure);
         renderDirty = true;
     }
-    private void All(object sender, RoutedEventArgs args) => Plugin.Guard(() => { selectedId = selectedName = null; Render(); });
-    private void Refresh(object sender, RoutedEventArgs args) => Plugin.Guard(Invalidate);
+    private void All(object sender, RoutedEventArgs args) => Plugin.Guard(() => { filter.Clear(); Render(); });
+    private void Refresh(object sender, RoutedEventArgs args) => Plugin.Guard(() => Invalidate());
     private void Open(SearchDirectory source)
-    { selectedId = source.DirectoryInfo.FullName; selectedName = source.Name; Render(); }
+    { filter.Toggle(source.DirectoryInfo.FullName, source.Name); Render(); }
 
     private void UpdateRows()
     {
@@ -149,7 +164,8 @@ internal sealed class ManagerController
         foreach (var pair in visible)
         {
             if (!rows.TryGetValue(pair.Key, out var badge)) rows.Add(pair.Key, badge = new RowBadge(pair.Key, pair.Value, Open));
-            badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, selectedId), text);
+            badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, filter.Id),
+                dlls?.ContainsDll(pair.Value.DirectoryInfo.FullName) == true, text);
         }
     }
 
@@ -174,6 +190,7 @@ internal sealed class ManagerController
         if (ReferenceEquals(Plugin.Active, this)) Plugin.Active = null;
         mounted = false;
         session?.Dispose(); session = null;
+        dllSession?.Dispose(); dllSession = null; dlls = null; dllFailure = null; dllDirty = false;
         if (directories != null) directories.CollectionChanged -= CollectionChanged;
         foreach (var item in observed) item.PropertyChanged -= ItemChanged;
         observed.Clear(); directories = null;
@@ -184,6 +201,6 @@ internal sealed class ManagerController
         if (wrapper != null && originalRightPane is UIElement original) wrapper.Children.Remove(original);
         if (page != null && wrapper != null && (page.RightPane == null || ReferenceEquals(page.RightPane, wrapper))) page.RightPane = originalRightPane;
         page = null; wrapper = null; details = null; originalRightPane = null; all = refresh = null;
-        report = null; failure = null; selectedId = selectedName = null;
+        report = null; failure = null; filter.Clear();
     }
 }

@@ -46,6 +46,8 @@ if ($Test) {
     Invoke-TaskProcess $taskDotnet @('build', (Join-Path $PSScriptRoot 'tests\ModManagerEnhancements.Tests.csproj'), '-c', 'Release', '--nologo', '--verbosity', 'minimal')
     Invoke-TaskProcess $taskDotnet @((Join-Path $PSScriptRoot 'tests\bin\Release\net10.0\ModManagerEnhancements.Tests.dll'))
     Invoke-TaskProcess (Join-Path $PSHOME 'powershell.exe') @('-NoProfile', '-NonInteractive', '-File', (Join-Path $PSScriptRoot 'tools\test-mono.ps1'), '-GameDirectory', $GameDirectory)
+    Invoke-TaskProcess $taskDotnet (@('build', (Join-Path $PSScriptRoot 'tests\UI\ModManagerEnhancements.UI.Tests.csproj'), '-c', 'Release', '--nologo', '--verbosity', 'minimal') + $taskProperties)
+    Invoke-TaskProcess (Join-Path $PSHOME 'powershell.exe') @('-NoProfile', '-NonInteractive', '-File', (Join-Path $PSScriptRoot 'tools\test-mono.ps1'), '-GameDirectory', $GameDirectory, '-UI')
 }
 $taskPackage = Join-Path $PSScriptRoot 'dist\ModManagerEnhancements'
 New-Item -ItemType Directory -Force $taskPackage | Out-Null

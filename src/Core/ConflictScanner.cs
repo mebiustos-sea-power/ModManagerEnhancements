@@ -22,7 +22,7 @@ internal sealed class ConflictScanner
             if (!seen.Add(source.Id)) throw new InvalidOperationException("A mod directory was registered twice: " + source.Directory);
             var root = new DirectoryInfo(source.Directory);
             if (!root.Exists) throw new DirectoryNotFoundException("The mod directory is missing: " + source.Directory);
-            foreach (var path in Enumerate(root, cancellation))
+            foreach (var path in ModFiles.Enumerate(root, cancellation))
             {
                 string relative = Path.GetRelativePath(root.FullName, path).Replace('\\', '/');
                 if (!IsContent(relative)) continue;
@@ -43,28 +43,6 @@ internal sealed class ConflictScanner
             overlaps.Add(new FileOverlap(pair.Key, providers.AsReadOnly()));
         }
         return new ConflictReport(overlaps.AsReadOnly());
-    }
-
-    private static IEnumerable<string> Enumerate(DirectoryInfo root, CancellationToken cancellation)
-    {
-        var pending = new Stack<DirectoryInfo>();
-        pending.Push(root);
-        while (pending.Count > 0)
-        {
-            cancellation.ThrowIfCancellationRequested();
-            foreach (var item in pending.Pop().EnumerateFileSystemInfos())
-            {
-                cancellation.ThrowIfCancellationRequested();
-                if (item is DirectoryInfo directory)
-                {
-                    if (directory.Name.StartsWith(".", StringComparison.Ordinal)) continue;
-                    if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
-                        throw new IOException("Cannot safely scan a linked subdirectory: " + directory.FullName);
-                    pending.Push(directory);
-                }
-                else if (item is FileInfo file) yield return file.FullName;
-            }
-        }
     }
 
     private static bool IsContent(string relative)

@@ -13,7 +13,7 @@ internal static class Program
     private static ConflictReport Scan(params ModSource[] mods) => Scanner.Scan(mods, CancellationToken.None);
     private static void Test(string name, Action test) { test(); passed++; Console.WriteLine("PASS " + name); }
 
-    private sealed class Fixture : IDisposable
+    internal sealed class Fixture : IDisposable
     {
         private readonly string root = Path.Combine(Path.GetTempPath(), "ModManagerEnhancements-tests-" + Guid.NewGuid().ToString("N"));
         internal ModSource Source(string name, bool enabled = true, bool baseGame = false)
@@ -34,6 +34,7 @@ internal static class Program
         try
         {
             if (args.Length > 0 && args[0] == "--scan-installed") { ScanInstalled(args); return 0; }
+            DllTests.Run(Test);
             Test("priority follows current order in both directions", () =>
             {
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B");
@@ -199,19 +200,32 @@ internal static class Program
                 Require(model.IsFiltered && model.Selection.Contains(a.Name), "Filtered view did not identify its scope or expose the reset action.");
                 foreach (string language in new[] { "ja", "en" })
                 {
-                    var text = new ModText(language);
-                    var all = new DetailsModel(text, report, null, null, null);
+                    var text = new ModText(language); var filter = new ModFilter();
+                    var all = new DetailsModel(text, report, filter.Id, filter.Name, null);
                     Require(!all.IsFiltered && all.Selection.Length == 0 && all.Files.Count == 2,
                         "Full view must show every file without a redundant scope label or reset action.");
-                    var filtered = new DetailsModel(text, report, a.Id, a.Name, null);
+                    filter.Toggle(a.Id, a.Name);
+                    var filtered = new DetailsModel(text, report, filter.Id, filter.Name, null);
                     Require(filtered.IsFiltered && filtered.Selection.Contains(a.Name) && filtered.Files.Count == 1,
                         "Selecting a mod must expose its scope and the action to return to all files.");
-                    var scanning = new DetailsModel(text, null, a.Id, a.Name, null);
+                    var scanning = new DetailsModel(text, null, filter.Id, filter.Name, null);
                     Require(scanning.IsFiltered && scanning.Selection == filtered.Selection,
                         "Rescanning must preserve the selected scope and reset action.");
-                    var reset = new DetailsModel(text, report, null, null, null);
-                    Require(!reset.IsFiltered && reset.Selection.Length == 0 && reset.Files.Count == all.Files.Count,
-                        "Clearing the filter must restore all files and hide the reset action.");
+                    var related = new BadgeModel(report, b.Id, filter.Id);
+                    Require(!related.IsSelected && related.HighlightOverridden,
+                        "The related mod must be distinguished from the selected outlined mod.");
+                    filter.Toggle(b.Id, b.Name);
+                    var switched = new DetailsModel(text, report, filter.Id, filter.Name, null);
+                    Require(switched.IsFiltered && switched.Selection.Contains(b.Name) && switched.Files.Count == 2
+                        && new BadgeModel(report, b.Id, filter.Id).IsSelected,
+                        "Clicking a related cyan mod must switch the scope rather than clear it.");
+                    filter.Toggle(b.Id.ToUpperInvariant(), b.Name);
+                    var reset = new DetailsModel(text, report, filter.Id, filter.Name, null);
+                    Require(!reset.IsFiltered && filter.Name == null && reset.Selection.Length == 0 && reset.Files.Count == all.Files.Count,
+                        "Clicking the selected mod again must restore all files and clear both scope fields.");
+                    filter.Toggle(a.Id, a.Name); filter.Clear();
+                    Require(filter.Id == null && filter.Name == null && !new BadgeModel(report, a.Id, filter.Id).IsSelected,
+                        "The existing Show all action must still clear selection and highlights.");
                 }
             });
             Test("missing directories fail instead of reporting no conflicts", () =>
@@ -230,14 +244,14 @@ internal static class Program
             {
                 using var started = new ManualResetEventSlim(); using var release = new ManualResetEventSlim();
                 var old = new ConflictReport(Array.Empty<FileOverlap>()); var latest = new ConflictReport(Array.Empty<FileOverlap>());
-                using var session = new ScanSession((mods, token) =>
+                using var session = new ScanSession<ConflictReport>((mods, token) =>
                 {
                     if (mods[0].Id == "old") { started.Set(); if (!release.Wait(5000)) throw new Exception("Test worker timed out."); return old; }
                     return latest;
                 }, error => throw new Exception("Unexpected worker error.", error));
                 session.Request(new[] { new ModSource("old", "old", "unused") }); Require(started.Wait(5000), "Old worker did not start.");
                 session.Request(new[] { new ModSource("new", "new", "unused") });
-                ScanOutcome? accepted = null;
+                ScanOutcome<ConflictReport>? accepted = null;
                 Require(SpinWait.SpinUntil(() => { accepted = session.Poll() ?? accepted; return accepted != null; }, 5000), "Current result did not arrive.");
                 Require(ReferenceEquals(accepted!.Report, latest), "Old result overwrote current selection.");
                 release.Set();
@@ -248,9 +262,9 @@ internal static class Program
             Test("scan failure is reported and a later rescan can recover", () =>
             {
                 int errors = 0;
-                using var session = new ScanSession((mods, token) => mods[0].Id == "bad" ? throw new IOException("Unreadable mod file") : new ConflictReport(Array.Empty<FileOverlap>()), error => errors++);
+                using var session = new ScanSession<ConflictReport>((mods, token) => mods[0].Id == "bad" ? throw new IOException("Unreadable mod file") : new ConflictReport(Array.Empty<FileOverlap>()), error => errors++);
                 session.Request(new[] { new ModSource("bad", "bad", "unused") });
-                ScanOutcome? outcome = null;
+                ScanOutcome<ConflictReport>? outcome = null;
                 Require(SpinWait.SpinUntil(() => (outcome = session.Poll()) != null, 5000), "Failure not delivered.");
                 Require(outcome!.Error is IOException && outcome.Report == null && errors == 1, "Failure was disguised as a normal report.");
                 session.Request(new[] { new ModSource("good", "good", "unused") }); outcome = null;
@@ -258,7 +272,7 @@ internal static class Program
             });
             Test("disposed sessions reject further work", () =>
             {
-                var session = new ScanSession((mods, token) => new ConflictReport(Array.Empty<FileOverlap>()), _ => { }); session.Dispose();
+                var session = new ScanSession<ConflictReport>((mods, token) => new ConflictReport(Array.Empty<FileOverlap>()), _ => { }); session.Dispose();
                 try { session.Request(Array.Empty<ModSource>()); throw new Exception("Disposed session accepted work."); }
                 catch (ObjectDisposedException) { }
             });

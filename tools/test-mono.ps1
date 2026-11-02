@@ -1,15 +1,18 @@
-param([Parameter(Mandatory=$true)][string]$GameDirectory)
+param([Parameter(Mandatory=$true)][string]$GameDirectory, [switch]$UI)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $taskManaged = Join-Path $GameDirectory 'Sea Power_Data\Managed'
 $taskRuntime = Join-Path $GameDirectory 'MonoBleedingEdge\EmbedRuntime\mono-2.0-bdwgc.dll'
-$taskTests = Join-Path $taskRoot 'tests\bin\Release\netstandard2.1\ModManagerEnhancements.Tests.dll'
+$taskTests = if ($UI) { Join-Path $taskRoot 'tests\UI\bin\Release\netstandard2.1\ModManagerEnhancements.UI.Tests.dll' } else { Join-Path $taskRoot 'tests\bin\Release\netstandard2.1\ModManagerEnhancements.Tests.dll' }
 foreach ($taskPath in @($taskRuntime, $taskTests)) { if (-not (Test-Path $taskPath)) { throw "Missing Mono dependency: $taskPath" } }
 $taskNative = @"
 using System;
 using System.Runtime.InteropServices;
 public static class ModManagerEnhancementsTestMono {
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetDllDirectory(string path);
     [DllImport(@"$taskRuntime", CallingConvention=CallingConvention.Cdecl)]
     public static extern void mono_set_assemblies_path(string path);
     [DllImport(@"$taskRuntime", CallingConvention=CallingConvention.Cdecl)]
@@ -19,6 +22,9 @@ public static class ModManagerEnhancementsTestMono {
 }
 "@
 Add-Type -TypeDefinition $taskNative
+if ($UI -and -not [ModManagerEnhancementsTestMono]::SetDllDirectory((Join-Path $GameDirectory 'Sea Power_Data\Plugins\x86_64'))) {
+    throw 'Could not configure the isolated Noesis test library path.'
+}
 $taskSearch = @($taskManaged, (Split-Path $taskTests -Parent)) -join ';'
 [Environment]::SetEnvironmentVariable('MONO_PATH', $taskSearch)
 [ModManagerEnhancementsTestMono]::mono_set_dirs($taskManaged, (Join-Path $GameDirectory 'MonoBleedingEdge\etc'))
