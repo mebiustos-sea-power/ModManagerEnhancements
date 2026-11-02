@@ -24,6 +24,7 @@ internal sealed class RowBadge : IDisposable
     private readonly ColumnDefinition column, dllColumn;
     private readonly Action<SearchDirectory> open;
     private readonly (UIElement Child, int Column)[] shifted;
+    private readonly (ColumnDefinition Column, GridLength Width)[] nativeGaps;
     private SourceIndicator? sourceIndicator;
 
     internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics)
@@ -31,6 +32,7 @@ internal sealed class RowBadge : IDisposable
         this.row = row; Source = source; this.open = open; this.metrics = metrics;
         if (row.ColumnDefinitions.Count != 9) throw new InvalidOperationException("The mod row no longer has the expected grid layout.");
         column = new ColumnDefinition(); dllColumn = new ColumnDefinition { Width = GridLength.Auto };
+        nativeGaps = new[] { 5, 7 }.Select(i => (row.ColumnDefinitions[i], row.ColumnDefinitions[i].Width)).ToArray();
         shifted = row.Children.Cast<UIElement>().Where(c => Grid.GetColumn(c) >= 5).Select(c => (c, Grid.GetColumn(c))).ToArray();
         var counts = new Grid();
         counts.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -52,6 +54,8 @@ internal sealed class RowBadge : IDisposable
         try
         {
             sourceIndicator = new SourceIndicator(row);
+            // Icon and DLL margins supply spacing around the native dependency warning.
+            foreach (var gap in nativeGaps) gap.Column.Width = new GridLength(0);
             // Keep native A before DLL, with source indicators and fixed override slots on the right.
             row.ColumnDefinitions.Insert(5, dllColumn);
             row.ColumnDefinitions.Add(column);
@@ -88,6 +92,7 @@ internal sealed class RowBadge : IDisposable
         button.Click -= Click;
         row.Children.Remove(button); row.Children.Remove(dllBadge);
         sourceIndicator?.Dispose(); sourceIndicator = null;
+        foreach (var gap in nativeGaps) gap.Column.Width = gap.Width;
         if (row.ColumnDefinitions.Contains(column)) row.ColumnDefinitions.Remove(column);
         if (row.ColumnDefinitions.Contains(dllColumn))
         {

@@ -41,16 +41,28 @@ internal static class Program
                         {
                             Rect? sourceBaseline = null, arrowBaseline = null; float? upBaseline = null, downBaseline = null;
                             f.Row.SetValue(TextElement.FontSizeProperty, font);
+                            foreach (bool warning in new[] { false, true })
                             foreach (bool anchor in new[] { false, true })
                                 foreach (bool steam in new[] { false, true })
                                     foreach (string language in new[] { "ja", "en" })
                                         foreach (var report in reports)
                                         {
+                                            f.Warning.Visibility = warning ? Visibility.Visible : Visibility.Collapsed;
                                             f.Anchor.Visibility = anchor ? Visibility.Visible : Visibility.Collapsed;
                                             f.SetOrigin(steam); f.State.SetLanguage(language);
                                             f.Badge.Update(new BadgeModel(report, f.Id, null), true, new ModText(language)); f.Layout(width);
                                             var dll = f.Bounds(f.Dll); var origin = f.Bounds(f.Origin); var arrows = f.Bounds(f.Arrows);
                                             var up = f.Bounds(f.Up); var down = f.Bounds(f.Down);
+                                            var dllText = f.Bounds((TextBlock)f.Dll.Child);
+                                            if (!warning)
+                                                Require(origin.X - (dllText.X + dllText.Width) <= 10.5f,
+                                                    "Hidden dependency warnings must not leave excessive space after DLL.");
+                                            else
+                                            {
+                                                var dependency = f.Bounds(f.Warning);
+                                                Require(dll.X + dll.Width <= dependency.X && dependency.X + dependency.Width <= origin.X,
+                                                    "Compacting the DLL gap must keep native dependency warnings unobstructed.");
+                                            }
                                             Require(dll.Width > 0 && dll.X + dll.Width <= origin.X && origin.X + origin.Width <= arrows.X
                                                 && Near(arrows.X + arrows.Width, f.Row.ActualWidth - f.Arrows.Margin.Right),
                                                 "Source indicators must precede fixed arrows at the actual right edge.");
@@ -67,7 +79,7 @@ internal static class Program
                                                 Require(Near(origin.X, sourceBaseline.Value.X) && Near(origin.Width, sourceBaseline.Value.Width)
                                                     && Near(arrows.X, arrowBaseline!.Value.X) && Near(arrows.Width, arrowBaseline.Value.Width)
                                                     && Near(up.X, upBaseline!.Value) && Near(down.X, downBaseline!.Value),
-                                                    "Source kind, language, A visibility or counts shifted the reserved slots.");
+                                                    "Source kind, language, status visibility or counts shifted the reserved slots.");
                                             sourceBaseline = origin; arrowBaseline = arrows; upBaseline = up.X; downBaseline = down.X;
                                             Require(Near(up.Width, down.Width) && up.X + up.Width <= down.X,
                                                 "The direction slots must be separate and equal.");
@@ -80,7 +92,8 @@ internal static class Program
                                             if (anchor)
                                             {
                                                 var a = f.Bounds(f.Anchor);
-                                                Require(a.X + a.Width <= dll.X && dll.X + dll.Width <= origin.X, "The native A mark must precede DLL, source and override indicators.");
+                                                Require(Near(dllText.X - (a.X + a.Width), 10) && dll.X + dll.Width <= origin.X,
+                                                    "The native A mark must keep its original spacing before DLL.");
                                             }
                                             f.Badge.Update(new BadgeModel(null, f.Id, null), true, new ModText(language)); f.Layout(width);
                                             Require(f.Arrows.Visibility == Visibility.Collapsed && Near(f.Bounds(f.Origin).X, origin.X),
@@ -138,10 +151,13 @@ internal static class Program
                     using var f = new Fixture();
                     f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("en")); f.Layout(800);
                     var bitmap = ((Image)f.Icon).Source;
+                    var compactedNameWidth = f.NameLabel.ActualWidth;
                     f.Badge.Dispose(); f.State.SetLanguage("ja"); f.Layout(800);
                     Require(f.Row.ColumnDefinitions.Count == 9 && f.Row.Children.Count == f.Original.Count
                         && f.Original.All(p => f.Row.Children.Contains(p.Key) && Grid.GetColumn(p.Key) == p.Value),
                         "Detaching left controls or columns behind.");
+                    Require(Near(f.Row.ColumnDefinitions[5].ActualWidth, 5) && Near(f.Row.ColumnDefinitions[7].ActualWidth, 5)
+                        && f.NameLabel.ActualWidth > compactedNameWidth, "Detaching must restore native spacing and return row space to the mod name.");
                     Require(ReferenceEquals(f.Origin.Content, f.Caption) && f.Caption.Text == "ワークショップ"
                         && f.Origin.ContentTemplate == null && float.IsNaN(f.Origin.Width) && f.Row.ColumnDefinitions[8].Width.IsAuto
                         && !ToolTipService.GetShowOnDisabled(f.Origin), "The native caption, properties or localization were not restored.");
@@ -171,6 +187,7 @@ internal static class Program
         internal readonly Grid Row = new() { VerticalAlignment = VerticalAlignment.Top, Height = 40 };
         internal readonly SearchDirectory Source;
         internal readonly TextBlock Anchor = new() { Text = "A", Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
+        internal readonly TextBlock Warning = new() { Text = "!", Width = 16, Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center };
         internal readonly CheckBox Check;
         internal readonly Button Origin;
         internal readonly TextBlock Caption;
@@ -211,11 +228,12 @@ internal static class Program
             typeof(SearchDirectory).GetField("<Name>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(Source, "Example mod");
             State = new SourceState(() => NativeClicks++); Row.DataContext = State;
             for (int i = 0; i < 9; i++) Row.ColumnDefinitions.Add(new ColumnDefinition { Width = i == 3 ? new GridLength(1, GridUnitType.Star) : GridLength.Auto });
+            Row.ColumnDefinitions[5].Width = Row.ColumnDefinitions[7].Width = new GridLength(5);
             // An unfilled template matches native hyperlink hit testing; a filled Border masks icon gaps.
             var style = (Style)GUI.ParseXaml("<Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='Button'><Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'><Grid><ContentPresenter HorizontalAlignment='{TemplateBinding HorizontalContentAlignment}' VerticalAlignment='{TemplateBinding VerticalContentAlignment}' Margin='{TemplateBinding Padding}'/></Grid></ControlTemplate></Setter.Value></Setter></Style>");
             Add(new Button { Content = "up", Style = style, Width = 28 }, 0); Add(new Button { Content = "down", Style = style, Width = 28 }, 1);
             Check = new CheckBox { Width = 18, Height = 18, Template = (ControlTemplate)GUI.ParseXaml("<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='CheckBox'><Border Background='#303A41'/></ControlTemplate>") };
-            Add(Check, 2); Add(NameLabel, 3); Add(Anchor, 4); Add(new TextBlock { Text = "!", Width = 16 }, 6);
+            Add(Check, 2); Add(NameLabel, 3); Add(Anchor, 4); Add(Warning, 6);
             // Sea Power 0.8.7: one Button at column 8; a nested TextBlock switches both captions via IsSteam.
             Origin = (Button)GUI.ParseXaml("<Button xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' IsEnabled='{Binding IsSteam}' Command='{Binding OpenSteamPageCommand}' Padding='0' Margin='0' HorizontalAlignment='Right' VerticalAlignment='Center'><TextBlock><TextBlock.Style><Style TargetType='TextBlock'><Style.Triggers><DataTrigger Binding='{Binding IsSteam}' Value='False'><Setter Property='Text' Value='{Binding Local}'/></DataTrigger><DataTrigger Binding='{Binding IsSteam}' Value='True'><Setter Property='Text' Value='{Binding Workshop}'/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Button>");
             Origin.Style = style; Caption = (TextBlock)Origin.Content; Add(Origin, 8);

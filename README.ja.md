@@ -20,7 +20,7 @@ Sea Powerの既存MODマネージャーに、DLLバッジとファイルの上�
 
 Sea Power 0.8.7と、動作する[Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757)環境が必要です。
 
-1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.12.zip` を取得します。
+1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.13.zip` を取得します。
 2. 展開した `ModManagerEnhancements` フォルダを `Sea Power_Data/StreamingAssets` へ配置します。
 3. ゲーム内で本MODとAnchor Chainを有効にし、Sea Powerを完全に終了して再起動します。
 
@@ -57,6 +57,6 @@ Windowsの.NET 10 SDK、インストール済みのゲームとAnchor Chainが�
 - `src/Plugin.cs`: 有効状態の確認とAnchor Chain起動処理。
 - `tests`、`tests/UI`、`tools/test-mono.ps1`: 機能検証と独立したMono・Noesis検証プロセス。
 
-識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.12`。
+識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.13`。
 
 入手元の表示には、Steam公式ストアのアイコンをMOD内に埋め込んで使用しています。SteamおよびSteamロゴは、米国およびその他の国におけるValve Corporationの商標または登録商標です。出典は[Steam公式ストアのアイコン](https://store.steampowered.com/favicon.ico)です。
