@@ -97,6 +97,31 @@ internal static class Program
                 var impact = Scan(a, b, c).Impact(b.Id);
                 Require(impact.Preferred == 1 && impact.Overridden == 1, "Mixed-direction badge counts were wrong.");
             });
+            Test("compact arrow counts preserve exact totals and details", () =>
+            {
+                var own = new ModSource("own", "Own", "own"); var other = new ModSource("other", "Other", "other");
+                foreach (int count in new[] { 0, 1, 9, 10, 123 })
+                {
+                    var files = Enumerable.Range(0, count).Select(i => new FileOverlap(i + ".png", new[] {
+                        new FileProvider(own, "own", "own"), new FileProvider(other, "other", "other") })).ToArray();
+                    var report = new ConflictReport(files);
+                    var winner = new BadgeModel(report, own.Id, null); var lower = new BadgeModel(report, other.Id, null);
+                    string number = count > 9 ? "9+" : count.ToString();
+                    Require(winner.PreferredText == (count == 0 ? "" : "↑" + number) && winner.OverriddenText.Length == 0
+                        && lower.OverriddenText == (count == 0 ? "" : "↓" + number) && lower.PreferredText.Length == 0,
+                        "Compact badges must show 1–9 exactly, 10 or more as 9+, and hide only absent directions.");
+                    Require(winner.Impact.Preferred == count && lower.Impact.Overridden == count,
+                        "The display limit must not truncate the real counts.");
+                    foreach (string language in new[] { "ja", "en" })
+                    {
+                        var text = new ModText(language);
+                        Require(text.Tooltip(winner.Impact, false).Contains(count.ToString())
+                            && text.Tooltip(lower.Impact, false).Contains(count.ToString())
+                            && new DetailsModel(text, report, own.Id, own.Name, null).Files.Count == count,
+                            "Tooltips and details must retain the exact totals above the compact display limit.");
+                    }
+                }
+            });
             Test("filtered badges identify the selected mod and only related directions", () =>
             {
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B"); var c = f.Source("C"); var d = f.Source("D");

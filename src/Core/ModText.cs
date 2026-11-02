@@ -13,6 +13,8 @@ internal sealed class ModText
     internal string ShowAll => ja ? "全件表示に戻す" : "Show all overrides";
     internal string FilteredSelection(string name) => ja ? "表示対象：" + name : "Filtered by: " + name;
     internal string DllTooltip => ja ? "DLLファイルを含むMODです。" : "This mod contains DLL files.";
+    internal string LocalTooltip => ja ? "ローカルMOD" : "Local mod";
+    internal string WorkshopTooltip => ja ? "Steamワークショップ" : "Steam Workshop";
     internal string Refresh => ja ? "再スキャン" : "Rescan";
     internal string Local => ja ? "ローカル" : "Local";
     internal string Workshop => ja ? "ワークショップ" : "Workshop";

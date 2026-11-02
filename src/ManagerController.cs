@@ -18,6 +18,7 @@ internal sealed class ManagerController
 {
     private readonly ModMenuView view;
     private readonly Dictionary<Grid, RowBadge> rows = new();
+    private readonly RowMetrics rowMetrics = new();
     private readonly List<INotifyPropertyChanged> observed = new();
     private MenuPage? page;
     private Grid? wrapper;
@@ -163,7 +164,7 @@ internal sealed class ManagerController
             { pair.Value.Dispose(); rows.Remove(pair.Key); }
         foreach (var pair in visible)
         {
-            if (!rows.TryGetValue(pair.Key, out var badge)) rows.Add(pair.Key, badge = new RowBadge(pair.Key, pair.Value, Open));
+            if (!rows.TryGetValue(pair.Key, out var badge)) rows.Add(pair.Key, badge = new RowBadge(pair.Key, pair.Value, Open, rowMetrics));
             badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, filter.Id),
                 dlls?.ContainsDll(pair.Value.DirectoryInfo.FullName) == true, text);
         }

@@ -7,7 +7,8 @@ Sea Powerの既存MODマネージャーに、DLLバッジとファイルの上�
 ## 機能と操作
 
 - DLLファイルを含むMODに、小さめのグレー文字で枠なしの `DLL` を表示します。無効なMODも対象に、Workshopの依存情報ではなく実ファイルから判定するため、ローカルMODにも対応します。
-- マーク類は `DLL`、既存のA、`↑／↓` の順に表示します。↑／↓の幅は内容に合わせ、Workshop／ローカルの文字は従来どおり右端に保ちます。
+- 行の右側は 既存のA、`DLL`、その他の状態マーク、入手元アイコン、右端の `↑／↓` の順です。丸いSteamアイコンはWorkshop、フォルダはローカルMODを表します。入手元はマウスオーバーで確認でき、Steamアイコンのクリックは従来どおりWorkshopを開きます。
+- 入手元アイコンと↑／↓の欄幅を全行でそろえ、矢印のない行にも幅を確保します。件数は1～9件をそのまま、10件以上を `9+` と表示し、ツールチップと詳細には正確な件数を残します。
 - 有効なローカル・Workshop MODとUser Dataの間で、内容が異なる重複ファイルを表示します。
 - `↑` は、そのMODが最優先の提供元になる重複ファイルの件数です。`↓` は、最優先ファイルと内容が異なる件数です。同一内容の重複だけではマークを付けません。
 - 左のMOD一覧の↑／↓をクリックすると、そのMODの上書き詳細に絞り込みます。選択中の枠付きマークを再クリックすると解除し、別のマークではそのMODへ切り替えます。起点のマークに水色の枠と背景、関連する方向の矢印に水色の強調を付けます。件数は各MOD全体のままです。「全件表示に戻す」で絞り込みと強調を解除します。
@@ -19,7 +20,7 @@ Sea Powerの既存MODマネージャーに、DLLバッジとファイルの上�
 
 Sea Power 0.8.7と、動作する[Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757)環境が必要です。
 
-1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.8.zip` を取得します。
+1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.12.zip` を取得します。
 2. 展開した `ModManagerEnhancements` フォルダを `Sea Power_Data/StreamingAssets` へ配置します。
 3. ゲーム内で本MODとAnchor Chainを有効にし、Sea Powerを完全に終了して再起動します。
 
@@ -49,11 +50,13 @@ Windowsの.NET 10 SDK、インストール済みのゲームとAnchor Chainが�
 
 成果物は `dist/ModManagerEnhancements` に作成します。ビルドはゲームへの配置、起動、ゲーム設定の変更を行いません。
 
-27項目の機能検証を.NET 10とゲーム付属Monoの両方で行います。対象はDLLの有無、無効なMOD、サブフォルダ、ファイルの追加・削除、独立した解析のエラー回復、優先順位、内容比較、絞り込み、キャンセル、古い結果の排除です。独立したNoesisプロセスの3項目では、バッジ順、Workshop／ローカルの文字位置、クリック対象、強調表示、行の取り外し・再生成を検証します。実機のゲーム画面への描画やゲーム全体のテーマは検証しません。
+28項目の機能検証を.NET 10とゲーム付属Monoの両方で行います。対象はDLLの有無、無効なMOD、サブフォルダ、ファイルの追加・削除、独立した解析のエラー回復、優先順位、内容比較、絞り込み、キャンセル、古い結果の排除です。独立したNoesisプロセスの3項目では、バッジ順、入手元アイコンと固定幅の矢印位置、入手元のマウスオーバー、クリック対象、強調表示、行の取り外し・再生成を検証します。実機のゲーム画面への描画やゲーム全体のテーマは検証しません。
 
 - `src/Core`: Unity・Noesisから独立した解析・結果・表示データ・非同期処理。
 - `src/UI`、`src/ManagerController.cs`: 既存画面への組み込みとライフサイクル管理。
 - `src/Plugin.cs`: 有効状態の確認とAnchor Chain起動処理。
 - `tests`、`tests/UI`、`tools/test-mono.ps1`: 機能検証と独立したMono・Noesis検証プロセス。
 
-識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.8`。
+識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.12`。
+
+入手元の表示には、Steam公式ストアのアイコンをMOD内に埋め込んで使用しています。SteamおよびSteamロゴは、米国およびその他の国におけるValve Corporationの商標または登録商標です。出典は[Steam公式ストアのアイコン](https://store.steampowered.com/favicon.ico)です。

@@ -3,6 +3,9 @@ namespace ModManagerEnhancements.Core;
 internal sealed class BadgeModel
 {
     internal ModImpact Impact { get; }
+    internal string PreferredText => Count("↑", Impact.Preferred);
+    internal string OverriddenText => Count("↓", Impact.Overridden);
+    private static string Count(string arrow, int count) => count == 0 ? "" : arrow + (count > 9 ? "9+" : count.ToString(System.Globalization.CultureInfo.InvariantCulture));
     internal bool IsSelected { get; }
     internal bool HighlightPreferred { get; }
     internal bool HighlightOverridden { get; }
