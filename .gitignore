@@ -1,0 +1,20 @@
+**/bin/
+**/obj/
+artifacts/
+dist/
+Directory.Build.local.props
+docs/agent-memory.md
+.agents/
+.codex/
+.vs/
+.vscode/
+*.dll
+*.pdb
+*.log
+*.tmp
+
+# Local credentials, environment, and release archives
+.aws/
+.env
+.env.*
+*.zip

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;netstandard2.1</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ModManagerEnhancements.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="..\src\Core\**\*.cs" LinkBase="Core" /></ItemGroup>
+</Project>

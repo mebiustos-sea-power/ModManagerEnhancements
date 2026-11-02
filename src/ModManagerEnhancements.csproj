@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>ModManagerEnhancements</AssemblyName>
+    <RootNamespace>ModManagerEnhancements</RootNamespace>
+    <Version>0.1.3</Version>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <FindDependenciesOfExternallyResolvedReferences>false</FindDependenciesOfExternallyResolvedReferences>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AnchorChain" HintPath="$(AnchorChainDir)\AnchorChain.dll" Private="false" ExternallyResolved="true" />
+    <Reference Include="BepInEx" HintPath="$(SeaPowerDir)\BepInEx\core\BepInEx.dll" Private="false" ExternallyResolved="true" />
+    <Reference Include="0Harmony" HintPath="$(SeaPowerDir)\BepInEx\core\0Harmony.dll" Private="false" ExternallyResolved="true" />
+    <Reference Include="Seapower-Scripts" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\Seapower-Scripts.dll" Private="false" ExternallyResolved="true" />
+    <Reference Include="Noesis.NoesisGUI" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\Noesis.NoesisGUI.dll" Private="false" ExternallyResolved="true" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\UnityEngine.CoreModule.dll" Private="false" ExternallyResolved="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UI\DetailsPanel.xaml" LogicalName="ModManagerEnhancements.DetailsPanel.xaml" />
+  </ItemGroup>
+  <Target Name="CheckGameReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(AnchorChainDir)\AnchorChain.dll')" Text="Set AnchorChainDir in Directory.Build.local.props or pass it to MSBuild." />
+    <Error Condition="!Exists('$(SeaPowerDir)\Sea Power_Data\Managed\Seapower-Scripts.dll')" Text="Set SeaPowerDir in Directory.Build.local.props or pass it to MSBuild." />
+  </Target>
+</Project>

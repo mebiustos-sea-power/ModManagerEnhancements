@@ -1,0 +1,55 @@
+<Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Name="ModManagerEnhancementsDetails" Background="{StaticResource Brush.Window.BackgroundDark}"
+        HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="460" Margin="33,0,0,33" Padding="20">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <TextBlock Text="{Binding Header}" FontSize="{StaticResource Font.Size.Header}" Foreground="{StaticResource Brush.Glyph.Highlight}"/>
+    <TextBlock Grid.Row="1" Text="{Binding Help}" TextWrapping="Wrap" Margin="0,8,0,8"/>
+    <StackPanel Grid.Row="2">
+      <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
+      <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Foreground="#E4AE75"/>
+      <TextBlock Text="{Binding Selection}" Visibility="{Binding IsFiltered, Converter={StaticResource CollapsedConverter}}"
+                 TextWrapping="Wrap" Foreground="{StaticResource Brush.Glyph.Highlight}" Margin="0,6,0,6"/>
+    </StackPanel>
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+      <Button x:Name="ShowAllOverrides" Content="{Binding AllCaption}" Padding="12,3" Margin="0,0,12,0"
+              Visibility="{Binding IsFiltered, Converter={StaticResource CollapsedConverter}}"/>
+      <Button x:Name="RescanOverrides" Content="{Binding RefreshCaption}" Padding="12,3"/>
+    </StackPanel>
+    <TextBlock Grid.Row="4" Text="{Binding Empty}" TextWrapping="Wrap"/>
+    <ItemsControl Grid.Row="5" ItemsSource="{Binding Files}" Focusable="False" IsTabStop="False"
+                  Foreground="{StaticResource Brush.Glyph.Normal}" HorizontalAlignment="Stretch">
+      <ItemsControl.Template>
+        <ControlTemplate TargetType="{x:Type ItemsControl}">
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                        CanContentScroll="True" Background="Transparent" BorderThickness="0" Padding="0">
+            <ItemsPresenter/>
+          </ScrollViewer>
+        </ControlTemplate>
+      </ItemsControl.Template>
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><VirtualizingStackPanel/></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemContainerStyle>
+        <Style TargetType="ContentPresenter"><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
+      </ItemsControl.ItemContainerStyle>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Border Background="Transparent" BorderBrush="#56616A" BorderThickness="0,0,0,1" Padding="0,8" HorizontalAlignment="Stretch">
+            <Border.ToolTip><TextBlock Text="{Binding Locations}" TextWrapping="Wrap" MaxWidth="700"/></Border.ToolTip>
+            <StackPanel>
+              <TextBlock Text="{Binding Path}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Glyph.Highlight}"/>
+              <TextBlock Text="{Binding Providers}" TextWrapping="Wrap" Margin="0,5,0,0"/>
+              <TextBlock Text="{Binding Note}" TextWrapping="Wrap" Foreground="#D9B76F" Margin="0,4,0,0"/>
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Grid>
+</Border>
