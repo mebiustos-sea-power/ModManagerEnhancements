@@ -87,14 +87,15 @@ internal sealed class ManagerController
             string baseGame = Path.Combine(Application.streamingAssetsPath, "original");
             var snapshot = directories!.Select(d => new ModSource(d.DirectoryInfo.FullName, d.Name, d.DirectoryInfo.FullName,
                 d.IsChecked, Plugin.SamePath(d.DirectoryInfo.FullName, baseGame))).ToArray();
-            if (selectedId != null && !snapshot.Any(d => ConflictReport.SameId(d.Id, selectedId))) selectedId = selectedName = null;
+            if (selectedId != null && !snapshot.Any(d => ConflictReport.SameId(d.Id, selectedId)))
+            { selectedId = selectedName = null; Render(); }
             session!.Request(snapshot);
         }
         var outcome = session!.Poll();
         if (outcome != null && !dirty)
         {
             report = outcome.Report; failure = outcome.Error;
-            Render(); renderDirty = true;
+            Render();
         }
         if (renderDirty || Time.realtimeSinceStartup >= rowsAt)
         {
@@ -121,10 +122,13 @@ internal sealed class ManagerController
     private void Invalidate()
     {
         dirty = true; scanAt = Time.realtimeSinceStartup + 0.2f;
-        report = null; failure = null; renderDirty = true; Render();
+        report = null; failure = null; Render();
     }
     private void Render()
-    { if (details != null) details.DataContext = new DetailsModel(text, report, selectedId, selectedName, failure); }
+    {
+        if (details != null) details.DataContext = new DetailsModel(text, report, selectedId, selectedName, failure);
+        renderDirty = true;
+    }
     private void All(object sender, RoutedEventArgs args) => Plugin.Guard(() => { selectedId = selectedName = null; Render(); });
     private void Refresh(object sender, RoutedEventArgs args) => Plugin.Guard(Invalidate);
     private void Open(SearchDirectory source)
@@ -145,7 +149,7 @@ internal sealed class ManagerController
         foreach (var pair in visible)
         {
             if (!rows.TryGetValue(pair.Key, out var badge)) rows.Add(pair.Key, badge = new RowBadge(pair.Key, pair.Value, Open));
-            badge.Update(report, text);
+            badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, selectedId), text);
         }
     }
 

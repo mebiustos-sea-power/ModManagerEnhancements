@@ -96,6 +96,76 @@ internal static class Program
                 var impact = Scan(a, b, c).Impact(b.Id);
                 Require(impact.Preferred == 1 && impact.Overridden == 1, "Mixed-direction badge counts were wrong.");
             });
+            Test("filtered badges identify the selected mod and only related directions", () =>
+            {
+                using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B"); var c = f.Source("C"); var d = f.Source("D");
+                f.Write(a, "a.png", "a"); f.Write(b, "a.png", "b");
+                f.Write(b, "b.png", "b"); f.Write(c, "b.png", "c");
+                f.Write(c, "unrelated.png", "c"); f.Write(d, "unrelated.png", "d");
+                var report = Scan(a, b, c, d);
+                var selected = new BadgeModel(report, b.Id, b.Id.ToUpperInvariant());
+                Require(selected.IsSelected && selected.HighlightPreferred && selected.HighlightOverridden,
+                    "The selected mod must be distinguished and highlight both of its existing directions.");
+                var higher = new BadgeModel(report, a.Id, b.Id);
+                Require(!higher.IsSelected && higher.HighlightPreferred && !higher.HighlightOverridden,
+                    "The higher provider must highlight only its preferred direction.");
+                var lower = new BadgeModel(report, c.Id, b.Id);
+                Require(!lower.IsSelected && !lower.HighlightPreferred && lower.HighlightOverridden,
+                    "An unrelated preferred file must not highlight a related mod's other direction.");
+                Require(lower.Impact.Preferred == 1 && lower.Impact.Overridden == 1,
+                    "Filtering must preserve the badge's complete file counts.");
+                var unrelated = new BadgeModel(report, d.Id, b.Id);
+                Require(unrelated.Impact.HasOverlaps && !unrelated.IsSelected && !unrelated.HighlightPreferred && !unrelated.HighlightOverridden,
+                    "An unrelated mod must keep its badge without being highlighted.");
+            });
+            Test("badge relationships match details for all providers including identical copies", () =>
+            {
+                using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B"); var c = f.Source("C"); var d = f.Source("D");
+                f.Write(a, "shared.png", "same"); f.Write(b, "shared.png", "same"); f.Write(c, "shared.png", "different");
+                f.Write(b, "another.png", "b"); f.Write(d, "another.png", "d");
+                var report = Scan(a, b, c, d);
+                var details = new DetailsModel(new ModText("en"), report, b.Id, b.Name, null);
+                Require(details.Files.Count == 2 && details.Files.Any(file => file.Path == "shared.png"),
+                    "A provider matching the preferred contents must still expose its shared file in the details.");
+                var selected = new BadgeModel(report, b.Id, b.Id);
+                Require(selected.IsSelected && selected.HighlightPreferred && !selected.HighlightOverridden,
+                    "An identical lower copy must not acquire a losing direction.");
+                Require(new BadgeModel(report, a.Id, b.Id).HighlightPreferred && new BadgeModel(report, c.Id, b.Id).HighlightOverridden,
+                    "The other providers in the same file detail must remain connected to the selected scope.");
+                Require(new BadgeModel(report, d.Id, b.Id).HighlightOverridden,
+                    "The selected provider's other shared file must also highlight its lower provider.");
+            });
+            Test("changing filters and scan results clears or reverses badge highlights", () =>
+            {
+                using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B"); var c = f.Source("C");
+                f.Write(a, "a.png", "a"); f.Write(b, "a.png", "b"); f.Write(b, "b.png", "b"); f.Write(c, "b.png", "c");
+                var report = Scan(a, b, c);
+                var byA = new BadgeModel(report, b.Id, a.Id);
+                var byC = new BadgeModel(report, b.Id, c.Id);
+                Require(byA.HighlightOverridden && !byA.HighlightPreferred && byC.HighlightPreferred && !byC.HighlightOverridden,
+                    "Changing the filter must replace the highlighted direction.");
+                foreach (string? scope in new string?[] { null, "missing" })
+                {
+                    var reset = new BadgeModel(report, b.Id, scope);
+                    Require(!reset.IsSelected && !reset.HighlightPreferred && !reset.HighlightOverridden
+                        && reset.Impact.Preferred == 1 && reset.Impact.Overridden == 1,
+                        "Clearing or losing the scope must remove highlights while keeping complete counts.");
+                }
+                var scanning = new BadgeModel(null, b.Id, b.Id);
+                Require(!scanning.Impact.HasOverlaps && !scanning.IsSelected && !scanning.HighlightPreferred && !scanning.HighlightOverridden,
+                    "An unavailable report must not retain old badges or selection decoration.");
+                var reordered = new BadgeModel(Scan(c, b, a), b.Id, c.Id);
+                Require(!reordered.HighlightPreferred && reordered.HighlightOverridden,
+                    "Reordering must reverse the highlighted relationship.");
+                var disabled = new ModSource(c.Id, c.Name, c.Directory, false);
+                var withoutC = Scan(a, b, disabled);
+                var changed = new BadgeModel(withoutC, b.Id, c.Id);
+                Require(changed.Impact.Overridden == 1 && !changed.HighlightPreferred && !changed.HighlightOverridden,
+                    "Disabling a provider must clear its relationships without removing unrelated badge counts.");
+                var noOverlap = new BadgeModel(Scan(a), a.Id, a.Id);
+                Require(!noOverlap.Impact.HasOverlaps && !noOverlap.IsSelected && !noOverlap.HighlightPreferred && !noOverlap.HighlightOverridden,
+                    "Removing the other provider must clear its old selection and highlights.");
+            });
             Test("relative paths match case insensitively", () =>
             {
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B");

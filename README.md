@@ -8,7 +8,7 @@ Adds file-override badges and a read-only details panel to Sea Power's built-in 
 
 - Shows differing files shared by enabled local and Workshop mods, including User Data.
 - `↑` counts shared files for which that mod is the highest-priority provider. `↓` counts files whose contents differ from the highest-priority provider.
-- Click a badge to filter the details to that mod. **Show all overrides** appears only while filtered.
+- Click a badge to filter the details to that mod. While filtered, the selected badge has a cyan outline and background; related arrows turn cyan. Counts still cover all of each mod's overrides. **Show all overrides** clears the filter and highlighting.
 - Lists providers in priority order. Hover over a file to inspect its full source paths.
 - Updates after changes to enabled mods, drag order, dependency sorting, or profiles. **Rescan** rereads edited, added, or deleted files.
 - Keeps the game's existing mod controls. File details do not have a click-selection state.
@@ -18,7 +18,7 @@ Adds file-override badges and a read-only details panel to Sea Power's built-in 
 
 Requires Sea Power 0.8.7 and a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.3.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.4.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
@@ -46,7 +46,7 @@ Copy `Directory.Build.local.props.example` to `Directory.Build.local.props` and 
 
 The package is written to `dist/ModManagerEnhancements`. The build does not install the mod, start the game, or alter game settings.
 
-The regression suite passes 18 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers file priority, enabled-state changes, content comparison, multiple providers, rescanning, filtering, INI qualifications, cancellation, stale results, and error recovery. These automated checks do not render the in-game UI or verify mouse input routing.
+The regression suite passes 21 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers file priority, enabled-state changes, content comparison, multiple providers, rescanning, filtering, INI qualifications, cancellation, stale results, and error recovery. These automated checks do not render the in-game UI or verify mouse input routing.
 
 Source layout:
 
@@ -55,4 +55,4 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests` and `tools/test-mono.ps1`: functional checks and the separate Mono test process.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.3`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.4`.

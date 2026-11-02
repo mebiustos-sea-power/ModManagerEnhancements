@@ -42,7 +42,7 @@ internal sealed class DetailsModel
         Selection = IsFiltered ? text.FilteredSelection(selectedName
             ?? throw new ArgumentException("A selected mod requires a display name.", nameof(selectedName))) : "";
         Error = error?.Message ?? "";
-        var files = report?.Files.Where(f => selectedId == null || f.Providers.Any(p => ConflictReport.SameId(p.Mod.Id, selectedId))).ToArray();
+        var files = report?.FilesFor(selectedId).ToArray();
         Files = files?.Select(f => new FileDetail(f, text)).ToArray() ?? Array.Empty<FileDetail>();
         Status = error != null ? text.Failed : report == null ? text.Scanning : text.Summary(Files.Count);
         Empty = report != null && Files.Count == 0 ? text.Empty : "";

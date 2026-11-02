@@ -48,10 +48,13 @@ internal sealed class ConflictReport
     internal IReadOnlyList<FileOverlap> Files { get; }
     internal ConflictReport(IReadOnlyList<FileOverlap> files) { Files = files; }
 
-    internal ModImpact Impact(string modId)
+    internal IEnumerable<FileOverlap> FilesFor(string? modId) => modId == null ? Files
+        : Files.Where(f => f.Providers.Any(p => SameId(p.Mod.Id, modId)));
+
+    internal ModImpact Impact(string modId, string? selectedId = null)
     {
         int preferred = 0, overridden = 0;
-        foreach (var file in Files)
+        foreach (var file in FilesFor(selectedId))
         {
             if (SameId(file.Preferred.Mod.Id, modId)) preferred++;
             else if (file.Providers.Any(p => SameId(p.Mod.Id, modId) && p.Fingerprint != file.Preferred.Fingerprint)) overridden++;

@@ -24,6 +24,4 @@ internal sealed class ModText
     internal string Tooltip(ModImpact impact) => ja
         ? $"優先されるファイル: {impact.Preferred}件\n上位MODと内容が異なるファイル: {impact.Overridden}件\nクリックして、このMODの上書き詳細に絞り込み"
         : $"Files with priority: {impact.Preferred}\nFiles differing from a higher-priority mod: {impact.Overridden}\nClick to show only this mod’s file overrides";
-    internal string Badge(ModImpact impact) => (impact.Preferred > 0 ? "↑" + impact.Preferred : "") +
-        (impact.Preferred > 0 && impact.Overridden > 0 ? " " : "") + (impact.Overridden > 0 ? "↓" + impact.Overridden : "");
 }

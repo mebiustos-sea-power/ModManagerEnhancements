@@ -8,7 +8,7 @@ Sea Powerの既存MODマネージャーに、ファイルの上書き関係を�
 
 - 有効なローカル・Workshop MODとUser Dataの間で、内容が異なる重複ファイルを表示します。
 - `↑` は、そのMODが最優先の提供元になる重複ファイルの件数です。`↓` は、最優先ファイルと内容が異なる件数です。同一内容の重複だけではマークを付けません。
-- 左のMOD一覧のマークをクリックすると、そのMODの上書き詳細に絞り込みます。絞り込み中だけ対象MOD名と「全件表示に戻す」が表示されます。
+- 左のMOD一覧のマークをクリックすると、そのMODの上書き詳細に絞り込みます。起点のマークに水色の枠と背景、関連する方向の矢印に水色の強調を付けます。件数は各MOD全体のままです。「全件表示に戻す」で絞り込みと強調を解除します。
 - ファイルの提供元を優先順に表示します。カーソルを合わせると実際のパスを確認できます。詳細リストは選択操作を持たない表示専用の一覧です。
 - チェック状態、ドラッグ、既存の依存順ソート、プロファイル適用に追従します。ファイルの編集・追加・削除後は「再スキャン」で読み直せます。
 - ゲーム言語が日本語なら日本語、それ以外は英語で表示します。
@@ -17,7 +17,7 @@ Sea Powerの既存MODマネージャーに、ファイルの上書き関係を�
 
 Sea Power 0.8.7と、動作する[Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757)環境が必要です。
 
-1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.3.zip` を取得します。
+1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.4.zip` を取得します。
 2. 展開した `ModManagerEnhancements` フォルダを `Sea Power_Data/StreamingAssets` へ配置します。
 3. ゲーム内で本MODとAnchor Chainを有効にし、Sea Powerを完全に終了して再起動します。
 
@@ -45,11 +45,11 @@ Windowsの.NET 10 SDK、インストール済みのゲームとAnchor Chainが�
 
 成果物は `dist/ModManagerEnhancements` に作成します。ビルドはゲームへの配置、起動、ゲーム設定の変更を行いません。
 
-18項目の機能検証が.NET 10とゲーム付属Monoの両方で成功しています。対象はファイル優先順位、有効状態、内容比較、複数提供元、再スキャン、絞り込み、INI注意書き、キャンセル、古い解析結果の排除、失敗からの回復です。自動テストではゲーム内UIの描画やマウス入力の経路は検証しません。
+21項目の機能検証が.NET 10とゲーム付属Monoの両方で成功しています。対象はファイル優先順位、有効状態、内容比較、複数提供元、再スキャン、絞り込み、INI注意書き、キャンセル、古い解析結果の排除、失敗からの回復です。自動テストではゲーム内UIの描画やマウス入力の経路は検証しません。
 
 - `src/Core`: Unity・Noesisから独立した解析・結果・表示データ・非同期処理。
 - `src/UI`、`src/ManagerController.cs`: 既存画面への組み込みとライフサイクル管理。
 - `src/Plugin.cs`: 有効状態の確認とAnchor Chain起動処理。
 - `tests`、`tools/test-mono.ps1`: 機能検証と独立したMono検証プロセス。
 
-識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.3`。
+識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.4`。
