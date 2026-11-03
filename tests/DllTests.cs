@@ -5,9 +5,9 @@ using ModManagerEnhancements.Core;
 
 internal static class DllTests
 {
-    private static readonly DllScanner Scanner = new();
+    private static readonly ModContentScanner Scanner = new();
     private static void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
-    private static DllInventory Scan(params ModSource[] mods) => Scanner.Scan(mods, CancellationToken.None);
+    private static ModContentInventory Scan(params ModSource[] mods) => Scanner.Scan(mods, CancellationToken.None);
 
     internal static void Run(Action<string, Action> test)
     {
@@ -61,9 +61,9 @@ internal static class DllTests
             using var f = new Program.Fixture(); var missing = f.Source("Missing", false); var good = f.Source("Good"); Directory.Delete(missing.Directory);
             int errors = 0;
             using var conflicts = new ScanSession<ConflictReport>(new ConflictScanner().Scan, _ => throw new Exception("Unexpected conflict scan failure."));
-            using var dlls = new ScanSession<DllInventory>(Scanner.Scan, _ => errors++);
+            using var dlls = new ScanSession<ModContentInventory>(Scanner.Scan, _ => errors++);
             var sources = new[] { missing, good }; conflicts.Request(sources); dlls.Request(sources);
-            ScanOutcome<ConflictReport>? content = null; ScanOutcome<DllInventory>? binary = null;
+            ScanOutcome<ConflictReport>? content = null; ScanOutcome<ModContentInventory>? binary = null;
             Require(SpinWait.SpinUntil(() => { content = conflicts.Poll() ?? content; binary = dlls.Poll() ?? binary; return content != null && binary != null; }, 5000), "Independent scans did not complete.");
             Require(content!.Report != null && content.Error == null && binary!.Report == null && binary.Error is DirectoryNotFoundException && errors == 1,
                 "A DLL scan failure was hidden or corrupted the independent file-overlap result.");

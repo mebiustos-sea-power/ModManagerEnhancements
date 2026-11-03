@@ -11,7 +11,7 @@ internal sealed class SourceIndicator : IDisposable
     private readonly ColumnDefinition column;
     private readonly GridLength originalWidth;
     private readonly Button source;
-    private readonly List<SavedProperty> saved = new();
+    private readonly List<NativeProperty> saved = new();
     private float iconSize;
 
     internal SourceIndicator(Grid row)
@@ -46,7 +46,7 @@ internal sealed class SourceIndicator : IDisposable
         source.ToolTip = isSteam ? text.WorkshopTooltip : text.LocalTooltip;
     }
 
-    private void Save(DependencyProperty property) => saved.Add(new SavedProperty(source, property));
+    private void Save(DependencyProperty property) => saved.Add(new NativeProperty(source, property));
 
     public void Dispose()
     {
@@ -55,23 +55,4 @@ internal sealed class SourceIndicator : IDisposable
         source.Resources.Remove(SourceIcons.SteamResource); source.Resources.Remove(SourceIcons.SizeResource);
     }
 
-    private sealed class SavedProperty
-    {
-        private readonly DependencyObject target;
-        private readonly DependencyProperty property;
-        private readonly BindingBase? binding;
-        private readonly object value;
-        internal SavedProperty(DependencyObject target, DependencyProperty property)
-        {
-            this.target = target; this.property = property;
-            binding = BindingOperations.GetBindingBase(target, property);
-            value = target.ReadLocalValue(property);
-        }
-        internal void Restore()
-        {
-            if (binding != null) BindingOperations.SetBinding(target, property, binding);
-            else if (ReferenceEquals(value, DependencyProperty.UnsetValue)) target.ClearValue(property);
-            else target.SetValue(property, value);
-        }
-    }
 }

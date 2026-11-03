@@ -6,6 +6,21 @@ internal sealed class ModText
 {
     private readonly bool ja;
     internal ModText(string language) { ja = language.StartsWith("ja", StringComparison.OrdinalIgnoreCase); }
+    internal string Search => ja ? "検索" : "Search";
+    internal string SearchPlaceholder => ja ? "MOD名を検索" : "Search mods";
+    internal string ClearSearch => ja ? "検索文字を消す" : "Clear search";
+    internal string VisibleOnly => ja ? "表示中のMODに限る" : "Visible mods only";
+    internal string NoMatchingMods => ja ? "該当するMODはありません。" : "No matching mods.";
+    internal string KindScanning => ja ? "種類を確認中…" : "Scanning types…";
+    internal string KindFailed => ja ? "種類の確認に失敗しました。" : "Type scan failed.";
+    internal string KindName(ModContent kind) => kind switch
+    {
+        ModContent.Missions => ja ? "ミッション" : "Missions",
+        ModContent.Campaigns => ja ? "キャンペーン" : "Campaigns",
+        ModContent.Units => ja ? "ユニット" : "Units",
+        ModContent.Dll => "DLL",
+        _ => ja ? "すべて" : "All"
+    };
     internal string Header => ja ? "上書き詳細" : "File overrides";
     internal string Help => ja ? "↑ 優先されるファイル　↓ 上位MODと内容が異なるファイル。\n左の↑／↓でMODを絞り込み、選択中の枠付きマークを再クリックで解除します。" : "↑ Files with priority   ↓ Files differing from a higher-priority mod.\nClick a mod’s ↑/↓ to filter; click the selected outlined badge again to clear.";
     internal string IniNote => ja ? "INIは読み込み方法によりキー単位で統合されます。この表示はファイル候補の優先順位です。" : "INI files may be merged by key depending on how they are loaded. This shows file-provider priority.";

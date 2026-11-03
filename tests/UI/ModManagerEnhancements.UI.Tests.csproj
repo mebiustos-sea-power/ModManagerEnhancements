@@ -8,8 +8,10 @@
   <ItemGroup>
     <Compile Include="..\..\src\Core\**\*.cs" LinkBase="Core" />
     <Compile Include="..\..\src\UI\*.cs" LinkBase="UI" />
+    <EmbeddedResource Include="..\..\src\UI\ModListSearch.xaml" LogicalName="ModManagerEnhancements.ModListSearch.xaml" />
     <EmbeddedResource Include="..\..\assets\ui\steam-48.pbgra" LogicalName="ModManagerEnhancements.Steam.pbgra" />
     <Reference Include="Seapower-Scripts" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\Seapower-Scripts.dll" Private="false" ExternallyResolved="true" />
+    <Reference Include="com.rlabrecque.steamworks.net" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\com.rlabrecque.steamworks.net.dll" Private="false" ExternallyResolved="true" />
     <Reference Include="Noesis.NoesisGUI" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\Noesis.NoesisGUI.dll" Private="false" ExternallyResolved="true" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\UnityEngine.CoreModule.dll" Private="false" ExternallyResolved="true" />
   </ItemGroup>

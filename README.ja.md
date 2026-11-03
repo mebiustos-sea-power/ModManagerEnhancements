@@ -2,10 +2,13 @@
 
 [English](README.md)
 
-Sea Powerの既存MODマネージャーに、DLLバッジとファイルの上書き関係を確認できるマーク・詳細表示を追加します。
+Sea Powerの既存MODマネージャーに、検索・種類フィルター、DLLバッジ、ファイルの上書きマーク・詳細表示を追加します。
 
 ## 機能と操作
 
+- MOD名・Workshop IDで検索できます。通常の文字列は大文字・小文字を区別しない部分一致、`*`／`?`を含む場合は名前またはID全体とのワイルドカード一致です。`*`は0文字以上、`?`は1文字に一致します。例：`ship`は`WarshipA Pack`にも一致し、`ship?`は`ShipA`に一致します。ワイルドカードで途中の文字列を探す場合は`*ship*`を使います。フォルダ名は検索対象にしません。
+- ミッション、キャンペーン、ユニット・兵装データ、DLLを含むMODで一覧を絞り込めます。1つのMODが複数の種類に該当できます。無効なMODも含め、ファイルを開かず配置パスから種類を判定します。検索文字を消しても種類の選択は残ります。
+- 一覧の絞り込み中は、既存の「全選択／全解除」が表示中の操作可能なMODだけに作用します。操作名はそのまま、ツールチップを「表示中のMODに限る」とします。一覧の検索で非表示になったMODも、有効であれば重複チェックの対象に残ります。
 - DLLファイルを含むMODに、小さめのグレー文字で枠なしの `DLL` を表示します。無効なMODも対象に、Workshopの依存情報ではなく実ファイルから判定するため、ローカルMODにも対応します。
 - 行の右側は 既存のA、`DLL`、その他の状態マーク、入手元アイコン、右端の `↑／↓` の順です。丸いSteamアイコンはWorkshop、フォルダはローカルMODを表します。入手元はマウスオーバーで確認でき、Steamアイコンのクリックは従来どおりWorkshopを開きます。
 - 入手元アイコンと↑／↓の欄幅を全行でそろえ、矢印のない行にも幅を確保します。件数は1～9件をそのまま、10件以上を `9+` と表示し、ツールチップと詳細には正確な件数を残します。
@@ -20,7 +23,7 @@ Sea Powerの既存MODマネージャーに、DLLバッジとファイルの上�
 
 Sea Power 0.8.7と、動作する[Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757)環境が必要です。
 
-1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.13.zip` を取得します。
+1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.14.zip` を取得します。
 2. 展開した `ModManagerEnhancements` フォルダを `Sea Power_Data/StreamingAssets` へ配置します。
 3. ゲーム内で本MODとAnchor Chainを有効にし、Sea Powerを完全に終了して再起動します。
 
@@ -50,13 +53,13 @@ Windowsの.NET 10 SDK、インストール済みのゲームとAnchor Chainが�
 
 成果物は `dist/ModManagerEnhancements` に作成します。ビルドはゲームへの配置、起動、ゲーム設定の変更を行いません。
 
-28項目の機能検証を.NET 10とゲーム付属Monoの両方で行います。対象はDLLの有無、無効なMOD、サブフォルダ、ファイルの追加・削除、独立した解析のエラー回復、優先順位、内容比較、絞り込み、キャンセル、古い結果の排除です。独立したNoesisプロセスの3項目では、バッジ順、入手元アイコンと固定幅の矢印位置、入手元のマウスオーバー、クリック対象、強調表示、行の取り外し・再生成を検証します。実機のゲーム画面への描画やゲーム全体のテーマは検証しません。
+34項目の機能検証を.NET 10とゲーム付属Monoの両方で行います。対象はDLL・内容種別、部分一致・ワイルドカード検索、無効なMOD、サブフォルダ、ファイルの追加・削除、独立した解析のエラー回復、優先順位、内容比較、絞り込み、キャンセル、古い結果の排除です。独立したNoesisプロセスの6項目では、バッジ順、入手元アイコンと固定幅の矢印位置、入手元のマウスオーバー、クリック対象、強調表示、行の取り外し・再生成、検索と種類の併用、表示中のみの選択操作、一覧とバインディングの復元を検証します。実機のゲーム画面への描画やゲーム全体のテーマは検証しません。
 
 - `src/Core`: Unity・Noesisから独立した解析・結果・表示データ・非同期処理。
 - `src/UI`、`src/ManagerController.cs`: 既存画面への組み込みとライフサイクル管理。
 - `src/Plugin.cs`: 有効状態の確認とAnchor Chain起動処理。
 - `tests`、`tests/UI`、`tools/test-mono.ps1`: 機能検証と独立したMono・Noesis検証プロセス。
 
-識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.13`。
+識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.14`。
 
 入手元の表示には、Steam公式ストアのアイコンをMOD内に埋め込んで使用しています。SteamおよびSteamロゴは、米国およびその他の国におけるValve Corporationの商標または登録商標です。出典は[Steam公式ストアのアイコン](https://store.steampowered.com/favicon.ico)です。

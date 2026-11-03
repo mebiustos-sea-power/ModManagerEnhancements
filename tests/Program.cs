@@ -35,6 +35,7 @@ internal static class Program
         {
             if (args.Length > 0 && args[0] == "--scan-installed") { ScanInstalled(args); return 0; }
             DllTests.Run(Test);
+            SearchTests.Run(Test);
             Test("priority follows current order in both directions", () =>
             {
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B");

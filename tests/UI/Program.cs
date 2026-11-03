@@ -174,6 +174,7 @@ internal static class Program
                     resource.Badge.Dispose(); resource.Row.Resources["Caption"] = "Updated Workshop"; resource.Layout(800);
                     Require(resource.Caption.Text == "Updated Workshop", "The original caption's dynamic-resource reference was lost.");
                 });
+                SearchUiTests.Run(Test);
                 Console.WriteLine($"Passed {passed} native UI checks without launching or attaching to Sea Power.");
             }
             finally { GUI.Shutdown(); }

@@ -2,10 +2,13 @@
 
 [日本語](README.ja.md)
 
-Adds DLL indicators, file-override badges, and a read-only details panel to Sea Power's built-in mod manager.
+Adds search, content filters, DLL indicators, and file-override details to Sea Power's built-in mod manager.
 
 ## Features
 
+- Searches mod names and Workshop IDs. Plain text is a case-insensitive partial search; patterns containing `*` or `?` match the whole name or ID. `*` matches zero or more characters and `?` matches one. For example, `ship` finds `WarshipA Pack`, while `ship?` matches `ShipA`; use `*ship*` to find names containing `ship` with a wildcard. Folder names are not searched.
+- Filters the list by missions, campaigns, unit/weapon data, or DLL presence. A mod can match several content types. Types are inferred from installed file paths, including disabled mods, without opening their contents. Clearing the search text keeps the type selection.
+- While the list is filtered, the native **Select all** and **Select none** actions affect only visible, editable mods. Their captions stay unchanged; the tooltip reads **Visible mods only**. Search affects the displayed list, while file-override analysis still includes all enabled mods.
 - Shows a small gray `DLL` label without a frame for mods containing DLL files, including disabled local and Workshop mods. Detection uses installed files rather than Workshop dependency metadata.
 - Orders row information as native `A`, `DLL` and other status marks, a source icon, then `↑/↓` at the far right. The circular Steam icon identifies Workshop mods; a folder identifies local mods. Hover for the localized source name. Clicking the Steam icon retains the original Workshop action.
 - Reserves equal source-icon widths and fixed arrow slots across all rows, including rows without overrides. Each direction shows counts 1–9 and `9+` for 10 or more; tooltips and details keep the exact totals.
@@ -21,7 +24,7 @@ Adds DLL indicators, file-override badges, and a read-only details panel to Sea 
 
 Requires Sea Power 0.8.7 and a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.13.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.14.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
@@ -51,7 +54,7 @@ Copy `Directory.Build.local.props.example` to `Directory.Build.local.props` and 
 
 The package is written to `dist/ModManagerEnhancements`. The build does not install the mod, start the game, or alter game settings.
 
-The regression suite passes 28 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers DLL presence, disabled mods, nested files, file additions/removals, independent scan recovery, file priority, content comparison, filtering, cancellation, stale results, and errors. Three standalone Noesis checks cover badge order, source-icon and fixed-arrow alignment, source-icon hover, pointer targets, highlighting, and row detachment/recreation. These checks do not render the live game window or verify the full game UI theme.
+The regression suite passes 34 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers DLL/content presence, partial and wildcard matching, disabled mods, nested files, file additions/removals, independent scan recovery, file priority, content comparison, filtering, cancellation, stale results, and errors. Six standalone Noesis checks cover badge order, source-icon and fixed-arrow alignment, source-icon hover, pointer targets, highlighting, row detachment/recreation, search/type combinations, scoped selection, and restoration of the native list and bindings. These checks do not render the live game window or verify the full game UI theme.
 
 Source layout:
 
@@ -60,6 +63,6 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests`, `tests/UI`, and `tools/test-mono.ps1`: core behavior and native Noesis checks in separate processes.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.13`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.14`.
 
 The source indicator uses the official Steam store icon embedded in this mod. Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries. The artwork is sourced from the [official Steam store icon](https://store.steampowered.com/favicon.ico).

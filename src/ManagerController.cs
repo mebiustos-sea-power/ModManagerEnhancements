@@ -24,17 +24,18 @@ internal sealed class ManagerController
     private Grid? wrapper;
     private object? originalRightPane;
     private Border? details;
+    private ModListSearch? listSearch;
     private Button? all, refresh;
     private TrulyObservableCollection<SearchDirectory>? directories;
     private ScanSession<ConflictReport>? session;
-    private ScanSession<DllInventory>? dllSession;
-    private DllInventory? dlls;
-    private Exception? dllFailure;
+    private ScanSession<ModContentInventory>? contentSession;
+    private ModContentInventory? content;
+    private Exception? contentFailure;
     private ConflictReport? report;
     private ModText text = new("en");
     private Exception? failure;
     private readonly ModFilter filter = new();
-    private bool mounted, dirty, dllDirty, renderDirty;
+    private bool mounted, dirty, contentDirty, renderDirty;
     private float scanAt, rowsAt;
 
     internal ManagerController(ModMenuView view)
@@ -72,7 +73,10 @@ internal sealed class ManagerController
             Grid.SetRow(details, 1); wrapper.Children.Add(details);
             page.RightPane = wrapper;
             session = new ScanSession<ConflictReport>(new ConflictScanner().Scan, Plugin.Error);
-            dllSession = new ScanSession<DllInventory>(new DllScanner().Scan, Plugin.Error);
+            contentSession = new ScanSession<ModContentInventory>(new ModContentScanner().Scan, Plugin.Error);
+            var left = page.ShortLeftPane as Grid ?? throw new InvalidOperationException("The native MOD list pane is not a Grid.");
+            listSearch = new ModListSearch(left, FindDirectoryList(left), model.Directories,
+                model.SelectAllCommand, model.SelectNoneCommand, text, () => renderDirty = true);
             mounted = true;
             Plugin.Active = this;
             Observe(model.Directories);
@@ -95,7 +99,7 @@ internal sealed class ManagerController
             if (filter.Id is string selectedId && !snapshot.Any(d => ConflictReport.SameId(d.Id, selectedId)))
             { filter.Clear(); Render(); }
             session!.Request(snapshot);
-            if (dllDirty) { dllDirty = false; dllSession!.Request(snapshot); }
+            if (contentDirty) { contentDirty = false; contentSession!.Request(snapshot); }
         }
         var outcome = session!.Poll();
         if (outcome != null && !dirty)
@@ -103,10 +107,11 @@ internal sealed class ManagerController
             report = outcome.Report; failure = outcome.Error;
             Render();
         }
-        var dllOutcome = dllSession!.Poll();
-        if (dllOutcome != null && !dllDirty)
+        var contentOutcome = contentSession!.Poll();
+        if (contentOutcome != null && !contentDirty)
         {
-            dlls = dllOutcome.Report; dllFailure = dllOutcome.Error;
+            content = contentOutcome.Report; contentFailure = contentOutcome.Error;
+            listSearch!.SetInventory(content, contentFailure);
             Render();
         }
         if (renderDirty || Time.realtimeSinceStartup >= rowsAt)
@@ -121,28 +126,38 @@ internal sealed class ManagerController
         foreach (var item in observed) item.PropertyChanged -= ItemChanged;
         observed.Clear(); directories = source;
         directories.CollectionChanged += CollectionChanged;
+        listSearch?.SetSource(source);
         foreach (var item in source.Cast<INotifyPropertyChanged>()) { item.PropertyChanged += ItemChanged; observed.Add(item); }
     }
 
     private void CollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
     {
+        // The game's collection also reports an item's property change as replacement by itself.
+        // ItemChanged handles those notifications without restarting content inspection.
+        if (args.Action == NotifyCollectionChangedAction.Replace && args.NewItems?.Count == 1 &&
+            args.OldItems?.Count == 1 && ReferenceEquals(args.NewItems[0], args.OldItems[0])) return;
         // Reordering can produce remove/insert bursts; snapshot only after they settle.
         Observe(directories!); Invalidate();
     }
     private void ItemChanged(object? sender, PropertyChangedEventArgs args)
     {
         if (string.IsNullOrEmpty(args.PropertyName) || args.PropertyName == "DirectoryInfo") Invalidate();
-        else if (args.PropertyName == "IsChecked") Invalidate(inspectDlls: false);
+        else if (args.PropertyName == "IsChecked") Invalidate(inspectContent: false);
+        else if (args.PropertyName == "Name") listSearch?.Refresh();
     }
-    private void Invalidate(bool inspectDlls = true)
+    private void Invalidate(bool inspectContent = true)
     {
         dirty = true; scanAt = Time.realtimeSinceStartup + 0.2f;
-        if (inspectDlls) { dllDirty = true; dlls = null; dllFailure = null; }
+        if (inspectContent)
+        {
+            contentDirty = true; content = null; contentFailure = null;
+            listSearch?.SetInventory(null, null);
+        }
         report = null; failure = null; Render();
     }
     private void Render()
     {
-        if (details != null) details.DataContext = new DetailsModel(text, report, filter.Id, filter.Name, failure ?? dllFailure);
+        if (details != null) details.DataContext = new DetailsModel(text, report, filter.Id, filter.Name, failure ?? contentFailure);
         renderDirty = true;
     }
     private void All(object sender, RoutedEventArgs args) => Plugin.Guard(() => { filter.Clear(); Render(); });
@@ -166,8 +181,20 @@ internal sealed class ManagerController
         {
             if (!rows.TryGetValue(pair.Key, out var badge)) rows.Add(pair.Key, badge = new RowBadge(pair.Key, pair.Value, Open, rowMetrics));
             badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, filter.Id),
-                dlls?.ContainsDll(pair.Value.DirectoryInfo.FullName) == true, text);
+                content?.ContainsDll(pair.Value.DirectoryInfo.FullName) == true, text);
         }
+        listSearch!.UpdateRows(visible.Keys);
+    }
+
+    private static ItemsControl FindDirectoryList(DependencyObject left)
+    {
+        var candidates = new List<ItemsControl>();
+        Visit(left, node =>
+        {
+            if (node is ItemsControl items && BindingOperations.GetBindingBase(items, ItemsControl.ItemsSourceProperty) is Binding binding &&
+                binding.Path?.Path == "Directories") candidates.Add(items);
+        });
+        return candidates.SingleOrDefault() ?? throw new InvalidOperationException("The native MOD list binding is unavailable.");
     }
 
     private static void Visit(DependencyObject node, Action<DependencyObject> action)
@@ -191,12 +218,13 @@ internal sealed class ManagerController
         if (ReferenceEquals(Plugin.Active, this)) Plugin.Active = null;
         mounted = false;
         session?.Dispose(); session = null;
-        dllSession?.Dispose(); dllSession = null; dlls = null; dllFailure = null; dllDirty = false;
+        contentSession?.Dispose(); contentSession = null; content = null; contentFailure = null; contentDirty = false;
         if (directories != null) directories.CollectionChanged -= CollectionChanged;
         foreach (var item in observed) item.PropertyChanged -= ItemChanged;
         observed.Clear(); directories = null;
         foreach (var badge in rows.Values) badge.Dispose();
         rows.Clear();
+        listSearch?.Dispose(); listSearch = null;
         if (all != null) all.Click -= All;
         if (refresh != null) refresh.Click -= Refresh;
         if (wrapper != null && originalRightPane is UIElement original) wrapper.Children.Remove(original);
