@@ -31,7 +31,7 @@ Changes to your mod selection and order are saved with the game's existing **Acc
 
 The `DLL` badge identifies DLL file presence in the mod folder and its subfolders; it does not establish whether a plugin has loaded successfully. DLL files are not opened or executed for this check.
 
-The mod compares files with the same relative path in enabled mods. For ordinary single-file lookups, the mod higher in the manager has priority. Identical contents do not produce a badge. Normal replacements of the base game's `original` files and package metadata are excluded.
+The mod compares files with the same relative path in enabled mods. For ordinary single-file lookups, the mod higher in the manager has priority. Identical contents do not produce a badge. Normal replacements of the base game's `original` files and package metadata are excluded. PNG files directly in `ui/backgrounds` are also excluded because the game collects them as independent background candidates.
 
 INI files can be merged by key depending on how they are read. An INI entry therefore describes file-provider priority; it does not establish which individual keys will be used. These entries include a note in the details panel.
 

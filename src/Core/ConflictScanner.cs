@@ -49,7 +49,13 @@ internal sealed class ConflictScanner
     {
         string extension = Path.GetExtension(relative);
         if (new[] { ".dll", ".exe", ".pdb", ".mdb" }.Contains(extension, StringComparer.OrdinalIgnoreCase)) return false;
-        if (relative.IndexOf('/') >= 0) return true;
+        int separator = relative.LastIndexOf('/');
+        if (separator >= 0)
+        {
+            // The game keeps direct background PNGs as independent candidates from every mod.
+            return !(extension.Equals(".png", StringComparison.OrdinalIgnoreCase) &&
+                relative.Substring(0, separator).Equals("ui/backgrounds", StringComparison.OrdinalIgnoreCase));
+        }
         string name = relative.ToLowerInvariant();
         return name != "_info.ini" && name != "thumbnail.png" &&
             !name.StartsWith("readme", StringComparison.Ordinal) && !name.StartsWith("license", StringComparison.Ordinal);

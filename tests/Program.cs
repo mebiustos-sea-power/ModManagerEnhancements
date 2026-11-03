@@ -198,12 +198,22 @@ internal static class Program
                 f.Write(a, "UI/Image.PNG", "a"); f.Write(b, "ui/image.png", "b");
                 Require(Scan(a, b).Files.Count == 1, "Windows path casing prevented overlap detection.");
             });
-            Test("package metadata and DLLs are not file override conflicts", () =>
+            Test("non-overriding package files and direct menu background PNGs are excluded", () =>
             {
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B");
-                foreach (string name in new[] { "_info.ini", "thumbnail.png", "README.md", "LICENSE", "Plugin.dll", "Plugin.pdb" })
+                foreach (string name in new[] { "_info.ini", "thumbnail.png", "README.md", "LICENSE", "Plugin.dll", "Plugin.pdb",
+                    "ui/backgrounds/menu.png", "UI/BACKGROUNDS/other.PNG" })
                 { f.Write(a, name, "a"); f.Write(b, name, "b"); }
-                Require(Scan(a, b).Files.Count == 0, "Package metadata or code binaries created a false file override.");
+                Require(Scan(a, b).Files.Count == 0, "Package metadata, code binaries or independent menu backgrounds created a false file override.");
+
+                string[] retained = { "ui/backgrounds/sub/menu.png", "ui/backgrounds/menu.jpg", "ui/backgrounds/config.json",
+                    "ui/backgrounds-extra/menu.png", "other/ui/backgrounds/menu.png", "preview.jpg", "settings.json" };
+                foreach (string name in retained) { f.Write(a, name, "a"); f.Write(b, name, "b"); }
+                var report = Scan(a, b);
+                Require(new HashSet<string>(report.Files.Select(file => file.RelativePath), StringComparer.OrdinalIgnoreCase).SetEquals(retained),
+                    "The background rule hid a nested PNG, another file type or an unrelated path.");
+                Require(report.Impact(a.Id).Preferred == retained.Length && report.Impact(b.Id).Overridden == retained.Length,
+                    "Background files leaked into badge counts or ordinary overlaps disappeared.");
             });
             Test("rescan observes edits additions and deletions", () =>
             {
