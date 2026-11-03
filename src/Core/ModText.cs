@@ -6,10 +6,8 @@ internal sealed class ModText
 {
     private readonly bool ja;
     internal ModText(string language) { ja = language.StartsWith("ja", StringComparison.OrdinalIgnoreCase); }
-    internal string Search => ja ? "検索" : "Search";
     internal string SearchPlaceholder => ja ? "MOD名を検索" : "Search mods";
     internal string ClearSearch => ja ? "検索文字を消す" : "Clear search";
-    internal string VisibleOnly => ja ? "表示中のMODに限る" : "Visible mods only";
     internal string NoMatchingMods => ja ? "該当するMODはありません。" : "No matching mods.";
     internal string KindScanning => ja ? "種類を確認中…" : "Scanning types…";
     internal string KindFailed => ja ? "種類の確認に失敗しました。" : "Type scan failed.";

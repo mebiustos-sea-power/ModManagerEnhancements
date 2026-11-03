@@ -59,7 +59,6 @@ internal sealed class ModListSearch : IDisposable
         SearchBox = Named<TextBox>("SearchText"); KindBox = Named<ComboBox>("ContentKind");
         ClearButton = Named<Button>("ClearSearch"); Counter = Named<TextBlock>("VisibleCount");
         placeholder = Named<TextBlock>("SearchPlaceholder"); empty = Named<TextBlock>("NoMatchingMods");
-        Named<TextBlock>("SearchLabel").Text = text.Search;
         placeholder.Text = text.SearchPlaceholder; ClearButton.ToolTip = text.ClearSearch;
         foreach (var choice in Choices) KindBox.Items.Add(new ComboBoxItem { Content = text.KindName(choice) });
         KindBox.SelectedIndex = 0;
@@ -102,7 +101,6 @@ internal sealed class ModListSearch : IDisposable
         ClearButton.Visibility = SearchBox.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         empty.Text = waiting ? (inventoryError == null ? text.KindScanning : text.KindFailed) : text.NoMatchingMods;
         empty.Visibility = visible.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var scope in scopes.Values) scope.Update(filter.IsActive, text.VisibleOnly);
         changed();
     }
 
@@ -112,11 +110,8 @@ internal sealed class ModListSearch : IDisposable
         foreach (var pair in scopes.ToArray())
             if (!current.Contains(pair.Key)) { pair.Value.Dispose(); scopes.Remove(pair.Key); }
         foreach (var row in current)
-        {
-            if (!scopes.TryGetValue(row, out var scope))
-                scopes.Add(row, scope = new RowScope(row, nativeAll, nativeNone, scopedAll, scopedNone));
-            scope.Update(filter.IsActive, text.VisibleOnly);
-        }
+            if (!scopes.ContainsKey(row))
+                scopes.Add(row, new RowScope(row, nativeAll, nativeNone, scopedAll, scopedNone));
     }
 
     private T Named<T>(string name) where T : class => Header.FindName(name) as T
@@ -157,8 +152,7 @@ internal sealed class ModListSearch : IDisposable
 
     private sealed class RowScope : IDisposable
     {
-        private readonly MenuItem[] actions;
-        private readonly NativeProperty[] commands, tooltips;
+        private readonly NativeProperty[] commands;
         internal RowScope(Grid row, ICommand all, ICommand none, ICommand scopedAll, ICommand scopedNone)
         {
             var menu = row.ContextMenu ?? throw new InvalidOperationException("The native MOD row context menu is missing.");
@@ -166,18 +160,12 @@ internal sealed class ModListSearch : IDisposable
                 ReferenceEquals(item.Command, command) || (BindingOperations.GetBindingBase(item, MenuItem.CommandProperty) is Binding binding &&
                     binding.Path?.Path == "DataContext." + name))
                 ?? throw new InvalidOperationException("The native MOD action is missing: " + name);
-            actions = new[] { Find("SelectAllCommand", all), Find("SelectNoneCommand", none) };
+            var actions = new[] { Find("SelectAllCommand", all), Find("SelectNoneCommand", none) };
             commands = actions.Select(item => new NativeProperty(item, MenuItem.CommandProperty)).ToArray();
-            tooltips = actions.Select(item => new NativeProperty(item, FrameworkElement.ToolTipProperty)).ToArray();
             try { actions[0].Command = scopedAll; actions[1].Command = scopedNone; }
             catch { Dispose(); throw; }
         }
-        internal void Update(bool filtered, string tooltip)
-        {
-            for (int i = 0; i < actions.Length; i++)
-                if (filtered) actions[i].ToolTip = tooltip; else tooltips[i].Restore();
-        }
         public void Dispose()
-        { for (int i = 0; i < actions.Length; i++) { commands[i].Restore(); tooltips[i].Restore(); } }
+        { foreach (var command in commands) command.Restore(); }
     }
 }

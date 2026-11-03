@@ -62,9 +62,9 @@ internal static class SearchUiTests
             {
                 using var f = new Fixture(); f.Search.SearchBox.Text = "*F-*"; f.Layout();
                 var row = f.Rows().First(); var actions = row.ContextMenu.Items.OfType<MenuItem>().ToArray();
-                Require((string)actions[0].Header == "全選択" && (string)actions[1].Header == "全解除" &&
-                    (string)actions[0].ToolTip == "表示中のMODに限る" && (string)actions[1].ToolTip == "表示中のMODに限る",
-                    "The native captions changed or the scoped tooltip was lost.");
+                Require((string)actions[0].Header == "すべて選択" && (string)actions[1].Header == "選択解除" &&
+                    actions.All(item => item.ToolTip == null),
+                    "The native captions changed or the scoped actions added an unwanted tooltip.");
                 var all = actions[0].Command; var none = actions[1].Command;
                 all.Execute(null);
                 Require(f.F15.IsChecked && f.F2.IsChecked && !f.OtherMission.IsChecked && f.State.NativeAllCalls == 0,
@@ -79,7 +79,7 @@ internal static class SearchUiTests
                 protectedActions[1].Command.Execute(null);
                 Require(f.Original.IsChecked, "A locked native source was changed by a scoped action.");
                 f.Search.SearchBox.Text = ""; f.Layout(); actions = f.Rows().First().ContextMenu.Items.OfType<MenuItem>().ToArray();
-                Require(actions.All(item => item.ToolTip == null), "Clearing the filter did not restore native tooltips.");
+                Require(actions.All(item => item.ToolTip == null), "Clearing the filter added an unwanted tooltip.");
                 actions[0].Command.Execute(null);
                 Require(f.State.NativeAllCalls == 1 && f.OtherMission.IsChecked, "Unfiltered bulk selection no longer uses the native action.");
                 f.State.AllCaption = "Select all";
@@ -141,7 +141,7 @@ internal static class SearchUiTests
                   <ItemsControl x:Name='NativeList' ItemsSource='{Binding Directories}'><ItemsControl.ItemTemplate><DataTemplate>
                     <Border Padding='0,2,16,2'><Grid><Grid.ContextMenu><ContextMenu>
                       <MenuItem Header='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.AllCaption}' Command='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.SelectAllCommand}'/>
-                      <MenuItem Header='全解除' Command='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.SelectNoneCommand}'/>
+                      <MenuItem Header='選択解除' Command='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.SelectNoneCommand}'/>
                     </ContextMenu></Grid.ContextMenu><TextBlock Text='{Binding Name}'/></Grid>
                     </Border>
                   </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
@@ -196,7 +196,7 @@ internal static class SearchUiTests
         public ICommand SelectNoneCommand { get; }
         public int NativeAllCalls { get; private set; }
         public int NativeNoneCalls { get; private set; }
-        private string allCaption = "全選択";
+        private string allCaption = "すべて選択";
         public string AllCaption { get => allCaption; set { allCaption = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AllCaption))); } }
         public event PropertyChangedEventHandler? PropertyChanged;
         public State()
