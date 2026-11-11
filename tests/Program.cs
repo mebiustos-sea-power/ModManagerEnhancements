@@ -16,10 +16,10 @@ internal static class Program
     internal sealed class Fixture : IDisposable
     {
         private readonly string root = Path.Combine(Path.GetTempPath(), "ModManagerEnhancements-tests-" + Guid.NewGuid().ToString("N"));
-        internal ModSource Source(string name, bool enabled = true, bool baseGame = false)
+        internal ModSource Source(string name, bool enabled = true, bool baseGame = false, IReadOnlyList<string>? replacedFolders = null)
         {
             string folder = Path.Combine(root, name); Directory.CreateDirectory(folder);
-            return new ModSource(folder, name, folder, enabled, baseGame);
+            return new ModSource(folder, name, folder, enabled, baseGame, replacedFolders);
         }
         internal void Write(ModSource source, string relative, string contents)
         {
@@ -49,6 +49,41 @@ internal static class Program
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B", false);
                 f.Write(a, "image.png", "aaa"); f.Write(b, "image.png", "bbb");
                 Require(Scan(a, b).Files.Count == 0, "Disabled mod contributed a conflict.");
+            });
+            Test("folder replacement hides lower files even when its own copy is absent", () =>
+            {
+                using var f = new Fixture();
+                var replacement = f.Source("Replacement", replacedFolders: new[] { @"\UNITS\\Surface\", "/" });
+                var lower = f.Source("Lower");
+                var bottom = f.Source("Bottom");
+                f.Write(lower, "units/surface/deep/shared.png", "lower");
+                f.Write(bottom, "units/surface/deep/shared.png", "bottom");
+                f.Write(lower, "units/surface-extra/shared.png", "lower");
+                f.Write(bottom, "units/surface-extra/shared.png", "bottom");
+
+                var report = Scan(replacement, lower, bottom);
+                Require(report.Files.Select(file => file.RelativePath).SequenceEqual(new[] { "units/surface-extra/shared.png" }),
+                    "A replaced descendant remained visible or a neighboring folder was hidden.");
+                Require(!report.Impact(replacement.Id).HasOverlaps && report.Impact(lower.Id).Preferred == 1 &&
+                    report.Impact(bottom.Id).Overridden == 1, "Hidden files affected the badges.");
+            });
+            Test("folder replacement respects load order and enabled state", () =>
+            {
+                using var f = new Fixture();
+                var upper = f.Source("Upper");
+                var replacement = f.Source("Replacement", replacedFolders: new[] { "units/surface" });
+                var disabled = f.Source("Replacement", enabled: false, replacedFolders: replacement.ReplacedFolders);
+                var lower = f.Source("Lower");
+                const string shared = "units/surface/shared.png";
+                f.Write(upper, shared, "upper");
+                f.Write(replacement, shared, "replacement");
+                f.Write(lower, shared, "lower");
+
+                Require(Scan(upper, replacement, lower).Files.Single().Providers.Select(p => p.Mod)
+                    .SequenceEqual(new[] { upper, replacement }), "Replacement must keep its own file and any higher provider.");
+                Require(Scan(replacement, upper, lower).Files.Count == 0, "Moving the replacement above both providers must hide them.");
+                Require(Scan(upper, disabled, lower).Files.Single().Providers.Select(p => p.Mod)
+                    .SequenceEqual(new[] { upper, lower }), "A disabled replacement must leave lower providers visible.");
             });
             Test("base game replacements are excluded", () =>
             {

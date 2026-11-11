@@ -22,9 +22,9 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 
 ## Installation
 
-Requires Sea Power 0.8.7 and a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
+Requires Sea Power 0.8.7–0.9.0 and a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.14.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.15.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
@@ -34,7 +34,7 @@ Changes to your mod selection and order are saved with the game's existing **Acc
 
 The `DLL` badge identifies DLL file presence in the mod folder and its subfolders; it does not establish whether a plugin has loaded successfully. DLL files are not opened or executed for this check.
 
-The mod compares files with the same relative path in enabled mods. For ordinary single-file lookups, the mod higher in the manager has priority. Identical contents do not produce a badge. Normal replacements of the base game's `original` files and package metadata are excluded. PNG files directly in `ui/backgrounds` are also excluded because the game collects them as independent background candidates.
+The mod compares files with the same relative path in enabled mods. For ordinary single-file lookups, the mod higher in the manager has priority. In Sea Power 0.9.0, a folder listed under `[Replaces]` in an enabled mod’s `_info.ini` removes files in that folder from lower-priority mods from the comparison. Identical contents do not produce a badge. Normal replacements of the base game's `original` files and package metadata are excluded. PNG files directly in `ui/backgrounds` are also excluded because the game collects them as independent background candidates.
 
 INI files can be merged by key depending on how they are read. An INI entry therefore describes file-provider priority; it does not establish which individual keys will be used. These entries include a note in the details panel.
 
@@ -63,6 +63,6 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests`, `tests/UI`, and `tools/test-mono.ps1`: core behavior and native Noesis checks in separate processes.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.14`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.15`.
 
 The source indicator uses the official Steam store icon embedded in this mod. Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries. The artwork is sourced from the [official Steam store icon](https://store.steampowered.com/favicon.ico).

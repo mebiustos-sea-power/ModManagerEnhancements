@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>ModManagerEnhancements</AssemblyName>
     <RootNamespace>ModManagerEnhancements</RootNamespace>
-    <Version>0.1.14</Version>
+    <Version>0.1.15</Version>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <FindDependenciesOfExternallyResolvedReferences>false</FindDependenciesOfExternallyResolvedReferences>
   </PropertyGroup>

@@ -11,9 +11,18 @@ internal sealed class ModSource
     internal string Directory { get; }
     internal bool Enabled { get; }
     internal bool IsBaseGame { get; }
+    internal IReadOnlyList<string> ReplacedFolders { get; }
 
-    internal ModSource(string id, string name, string directory, bool enabled = true, bool isBaseGame = false)
-    { Id = id; Name = name; Directory = directory; Enabled = enabled; IsBaseGame = isBaseGame; }
+    internal ModSource(string id, string name, string directory, bool enabled = true, bool isBaseGame = false,
+        IReadOnlyList<string>? replacedFolders = null)
+    {
+        Id = id;
+        Name = name;
+        Directory = directory;
+        Enabled = enabled;
+        IsBaseGame = isBaseGame;
+        ReplacedFolders = replacedFolders ?? Array.Empty<string>();
+    }
 }
 
 internal sealed class FileProvider

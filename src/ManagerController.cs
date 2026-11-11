@@ -16,6 +16,8 @@ namespace ModManagerEnhancements;
 
 internal sealed class ManagerController
 {
+    // Sea Power 0.8.7 has no folder replacement metadata on its directory entries.
+    private static readonly System.Reflection.PropertyInfo? ReplacedFoldersProperty = typeof(SearchDirectory).GetProperty("ReplacedFolders");
     private readonly ModMenuView view;
     private readonly Dictionary<Grid, RowBadge> rows = new();
     private readonly RowMetrics rowMetrics = new();
@@ -94,8 +96,13 @@ internal sealed class ManagerController
         {
             dirty = false;
             string baseGame = Path.Combine(Application.streamingAssetsPath, "original");
-            var snapshot = directories!.Select(d => new ModSource(d.DirectoryInfo.FullName, d.Name, d.DirectoryInfo.FullName,
-                d.IsChecked, Plugin.SamePath(d.DirectoryInfo.FullName, baseGame))).ToArray();
+            var snapshot = directories!.Select(d =>
+            {
+                string path = d.DirectoryInfo.FullName;
+                var replacedFolders = ReplacedFoldersProperty == null ? null
+                    : ((IReadOnlyList<string>)ReplacedFoldersProperty.GetValue(d)!).ToArray();
+                return new ModSource(path, d.Name, path, d.IsChecked, Plugin.SamePath(path, baseGame), replacedFolders);
+            }).ToArray();
             if (filter.Id is string selectedId && !snapshot.Any(d => ConflictReport.SameId(d.Id, selectedId)))
             { filter.Clear(); Render(); }
             session!.Request(snapshot);

@@ -7,14 +7,15 @@ using System.Threading;
 
 namespace ModManagerEnhancements.Core;
 
-// Input order is the game's search order: the first enabled provider has priority.
-// This index describes physical file overlaps, not INI key merges or DLL loading.
+// Input order follows the game's search order. The first remaining provider has priority.
+// INI key merges and DLL loading are outside the scope of this file index.
 internal sealed class ConflictScanner
 {
     internal ConflictReport Scan(IReadOnlyList<ModSource> sources, CancellationToken cancellation)
     {
         var index = new Dictionary<string, List<(ModSource Mod, string Path)>>(StringComparer.OrdinalIgnoreCase);
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var replacedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var source in sources)
         {
             cancellation.ThrowIfCancellationRequested();
@@ -25,9 +26,17 @@ internal sealed class ConflictScanner
             foreach (var path in ModFiles.Enumerate(root, cancellation))
             {
                 string relative = Path.GetRelativePath(root.FullName, path).Replace('\\', '/');
-                if (!IsContent(relative)) continue;
+                if (IsReplaced(relative, replacedFolders) || !IsContent(relative)) continue;
                 if (!index.TryGetValue(relative, out var providers)) index.Add(relative, providers = new List<(ModSource, string)>());
                 providers.Add((source, path));
+            }
+
+            // The game checks this layer's files before stopping the search of lower layers.
+            foreach (string folder in source.ReplacedFolders)
+            {
+                string normalized = folder.Replace('\\', '/').Trim('/');
+                while (normalized.Contains("//")) normalized = normalized.Replace("//", "/");
+                if (normalized.Length > 0) replacedFolders.Add(normalized);
             }
         }
 
@@ -43,6 +52,17 @@ internal sealed class ConflictScanner
             overlaps.Add(new FileOverlap(pair.Key, providers.AsReadOnly()));
         }
         return new ConflictReport(overlaps.AsReadOnly());
+    }
+
+    private static bool IsReplaced(string relative, HashSet<string> replacedFolders)
+    {
+        foreach (string folder in replacedFolders)
+        {
+            if (relative.Equals(folder, StringComparison.OrdinalIgnoreCase) ||
+                (relative.Length > folder.Length && relative[folder.Length] == '/' &&
+                    relative.StartsWith(folder, StringComparison.OrdinalIgnoreCase))) return true;
+        }
+        return false;
     }
 
     private static bool IsContent(string relative)
