@@ -22,9 +22,9 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 
 ## Installation
 
-Requires Sea Power 0.9.0 and a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
+Targets the latest Sea Power release and requires a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.16.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.17.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
@@ -63,6 +63,6 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests`, `tests/UI`, and `tools/test-mono.ps1`: core behavior and native Noesis checks in separate processes.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.16`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.17`.
 
 The source indicator uses the official Steam store icon embedded in this mod. Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries. The artwork is sourced from the [official Steam store icon](https://store.steampowered.com/favicon.ico).
