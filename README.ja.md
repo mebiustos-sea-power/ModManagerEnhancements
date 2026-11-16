@@ -23,13 +23,15 @@ Sea Powerの既存MODマネージャーに、検索・種類フィルター、DL
 
 Sea Powerの最新版を対象とし、動作する[Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757)環境が必要です。
 
-1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.17.zip` を取得します。
+1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.18.zip` を取得します。
 2. 展開した `ModManagerEnhancements` フォルダを `Sea Power_Data/StreamingAssets` へ配置します。
 3. ゲーム内で本MODとAnchor Chainを有効にし、Sea Powerを完全に終了して再起動します。
 
 MODの選択・並び順の保存には、ゲーム既存の「確定」を使用します。
 
 ## 判定範囲
+
+黄色い三角マークは、現在のゲームバージョンが作者の指定した対応範囲外にあるMODに付きます。無効なMODにも表示します。
 
 DLLバッジはMODフォルダとサブフォルダにDLLファイルが存在することを示し、プラグインの読み込み成功を判定するものではありません。判定のためにDLLを開いたり実行したりしません。
 
@@ -53,13 +55,13 @@ Windowsの.NET 10 SDK、インストール済みのゲームとAnchor Chainが�
 
 成果物は `dist/ModManagerEnhancements` に作成します。ビルドはゲームへの配置、起動、ゲーム設定の変更を行いません。
 
-34項目の機能検証を.NET 10とゲーム付属Monoの両方で行います。対象はDLL・内容種別、部分一致・ワイルドカード検索、無効なMOD、サブフォルダ、ファイルの追加・削除、独立した解析のエラー回復、優先順位、内容比較、絞り込み、キャンセル、古い結果の排除です。独立したNoesisプロセスの6項目では、バッジ順、入手元アイコンと固定幅の矢印位置、入手元のマウスオーバー、クリック対象、強調表示、行の取り外し・再生成、検索と種類の併用、表示中のみの選択操作、一覧とバインディングの復元を検証します。実機のゲーム画面への描画やゲーム全体のテーマは検証しません。
+36項目の機能検証を.NET 10とゲーム付属Monoの両方で行います。対象はDLL・内容種別、部分一致・ワイルドカード検索、無効なMOD、サブフォルダ、ファイルの追加・削除、独立した解析のエラー回復、優先順位、内容比較、絞り込み、キャンセル、古い結果の排除です。独立したNoesisプロセスの7項目では、バージョン警告の位置とツールチップ、バッジ順、入手元アイコンと固定幅の矢印位置、入手元のマウスオーバー、クリック対象、強調表示、行の取り外し・再生成、検索と種類の併用、表示中のみの選択操作、一覧とバインディングの復元を検証します。実機のゲーム画面への描画やゲーム全体のテーマは検証しません。
 
 - `src/Core`: Unity・Noesisから独立した解析・結果・表示データ・非同期処理。
 - `src/UI`、`src/ManagerController.cs`: 既存画面への組み込みとライフサイクル管理。
 - `src/Plugin.cs`: 有効状態の確認とAnchor Chain起動処理。
 - `tests`、`tests/UI`、`tools/test-mono.ps1`: 機能検証と独立したMono・Noesis検証プロセス。
 
-識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.17`。
+識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.18`。
 
 入手元の表示には、Steam公式ストアのアイコンをMOD内に埋め込んで使用しています。SteamおよびSteamロゴは、米国およびその他の国におけるValve Corporationの商標または登録商標です。出典は[Steam公式ストアのアイコン](https://store.steampowered.com/favicon.ico)です。

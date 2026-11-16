@@ -146,6 +146,56 @@ internal static class Program
                     f.Filter.Clear(); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja")); f.Layout(800);
                     Require(Same(f.Up.Foreground, normalUp) && Same(f.Down.Foreground, normalDown), "Show all did not clear highlighting.");
                 });
+                Test("version warnings remain visible on disabled rows and preserve neighboring controls", () =>
+                {
+                    string tooltip = new ModText("ja").CompatibilityTooltip;
+                    using var baseline = new Fixture();
+                    using var f = new Fixture(compatibilityWarning: tooltip);
+                    f.SetOrigin(true);
+                    baseline.SetOrigin(true);
+                    f.Warning.Visibility = baseline.Warning.Visibility = Visibility.Visible;
+                    f.Anchor.Visibility = baseline.Anchor.Visibility = Visibility.Visible;
+                    var warning = f.CompatibilityWarning ?? throw new Exception("The row did not show its version warning.");
+                    Require(baseline.CompatibilityWarning == null, "The row showed a warning without a version mismatch.");
+
+                    foreach (int width in new[] { 480, 800 })
+                    {
+                        foreach (bool enabled in new[] { true, false })
+                        {
+                            f.Source.IsChecked = enabled;
+                            f.Check.IsChecked = enabled;
+                            f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja"));
+                            baseline.Badge.Update(new BadgeModel(baseline.Report, baseline.Id, null), true, new ModText("ja"));
+                            f.Layout(width);
+                            baseline.Layout(width);
+                            var mark = f.Bounds(warning);
+                            var anchor = f.Bounds(f.Anchor);
+                            Require(mark.Width > 0 && mark.X + mark.Width <= anchor.X,
+                                "The compatibility warning must be left of the native A mark.");
+                            Require(Near(anchor.X, baseline.Bounds(baseline.Anchor).X) &&
+                                Near(f.Bounds(f.Dll).X, baseline.Bounds(baseline.Dll).X) &&
+                                Near(f.Bounds(f.Warning).X, baseline.Bounds(baseline.Warning).X) &&
+                                Near(f.Bounds(f.Origin).X, baseline.Bounds(baseline.Origin).X) &&
+                                Near(f.Bounds(f.Arrows).X, baseline.Bounds(baseline.Arrows).X),
+                                "The compatibility warning shifted an existing indicator.");
+                            Require(Near(f.Bounds(f.NameLabel).X, baseline.Bounds(baseline.NameLabel).X) &&
+                                baseline.Row.ColumnDefinitions.Count == 11 &&
+                                f.NameLabel.ActualWidth < baseline.NameLabel.ActualWidth,
+                                "Only warned rows should spend name space on the warning.");
+                            Require(warning.ToolTip is string tip && tip == tooltip && f.HoverCenter(warning) > 0,
+                                "Hovering the compatibility warning must show its tooltip.");
+                            f.Click(warning);
+                            Require(f.Check.IsChecked == enabled && f.NativeClicks == 0 && f.Filters == 0,
+                                "Clicking the warning changed the enabled state or triggered a command.");
+                        }
+                    }
+
+                    f.Badge.Dispose();
+                    f.Layout(480);
+                    Require(f.CompatibilityWarning == null && f.Row.Children.Count == f.Original.Count &&
+                        f.Row.ColumnDefinitions.Count == 9 && f.Original.All(p => Grid.GetColumn(p.Key) == p.Value),
+                        "Detaching the row left its compatibility warning behind.");
+                });
                 Test("detaching restores the native shared caption, source bindings and layout", () =>
                 {
                     using var f = new Fixture();
@@ -200,11 +250,13 @@ internal static class Program
         internal readonly Dictionary<UIElement, int> Original;
         internal RowBadge Badge;
         internal int Filters, NativeClicks;
-        private int tooltipRequests;
+
         private readonly View view;
         private double time;
         internal string Id => Source.DirectoryInfo.FullName;
         internal Border Dll => Row.Children.OfType<Border>().Single(b => b.Name == "ModManagerEnhancementsDllBadge");
+        internal Border? CompatibilityWarning => Row.Children.OfType<Border>()
+            .SingleOrDefault(b => b.Name == "ModManagerEnhancementsCompatibilityWarning");
         internal Button Arrows => Row.Children.OfType<Button>().Single(b => b.Name == "ModManagerEnhancementsOverrides");
         internal TextBlock Up => ((Grid)((Border)Arrows.Content).Child).Children.OfType<TextBlock>().First();
         internal TextBlock Down => ((Grid)((Border)Arrows.Content).Child).Children.OfType<TextBlock>().Last();
@@ -220,7 +272,7 @@ internal static class Program
             return null;
         }
 
-        internal Fixture(bool resourceCaption = false)
+        internal Fixture(bool resourceCaption = false, string? compatibilityWarning = null)
         {
 #pragma warning disable SYSLIB0050
             Source = (SearchDirectory)FormatterServices.GetUninitializedObject(typeof(SearchDirectory));
@@ -238,10 +290,10 @@ internal static class Program
             // Sea Power 0.8.7: one Button at column 8; a nested TextBlock switches both captions via IsSteam.
             Origin = (Button)GUI.ParseXaml("<Button xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' IsEnabled='{Binding IsSteam}' Command='{Binding OpenSteamPageCommand}' Padding='0' Margin='0' HorizontalAlignment='Right' VerticalAlignment='Center'><TextBlock><TextBlock.Style><Style TargetType='TextBlock'><Style.Triggers><DataTrigger Binding='{Binding IsSteam}' Value='False'><Setter Property='Text' Value='{Binding Local}'/></DataTrigger><DataTrigger Binding='{Binding IsSteam}' Value='True'><Setter Property='Text' Value='{Binding Workshop}'/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Button>");
             Origin.Style = style; Caption = (TextBlock)Origin.Content; Add(Origin, 8);
-            Origin.ToolTipOpening += (_, _) => tooltipRequests++;
+
             if (resourceCaption) { Row.Resources["Caption"] = "Workshop"; Caption.SetResourceReference(TextBlock.TextProperty, "Caption"); }
             Original = Row.Children.Cast<UIElement>().ToDictionary(c => c, Grid.GetColumn);
-            Report = Counts(1, 1); Badge = new RowBadge(Row, Source, Select, Metrics); view = GUI.CreateView(Row);
+            Report = Counts(1, 1); Badge = new RowBadge(Row, Source, Select, Metrics, compatibilityWarning); view = GUI.CreateView(Row);
         }
 
         internal ConflictReport Counts(int up, int down)
@@ -264,14 +316,22 @@ internal static class Program
         private void Add(UIElement child, int column) { Grid.SetColumn(child, column); Row.Children.Add(child); }
         internal void Layout(int width) { view.SetSize(width, 100); view.Update(time += 0.1); }
         internal Rect Bounds(FrameworkElement element) => element.TransformToAncestor(Row).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
-        internal int HoverSourceCenter()
+        internal int HoverSourceCenter() => HoverCenter(Origin);
+        internal int HoverCenter(FrameworkElement element)
         {
-            ToolTipService.SetInitialShowDelay(Origin, 0); ToolTipService.SetBetweenShowDelay(Origin, 0);
+            ToolTipService.SetInitialShowDelay(element, 0); ToolTipService.SetBetweenShowDelay(element, 0);
             view.MouseMove(0, 80); view.Update(time += 0.1);
-            int before = tooltipRequests; var bounds = Bounds(Origin);
-            view.MouseMove((int)(bounds.X + bounds.Width / 2), (int)(bounds.Y + bounds.Height / 2));
-            view.Update(time += 0.1); System.Threading.Thread.Sleep(1); view.Update(time += 0.1);
-            return tooltipRequests - before;
+            int requests = 0;
+            ToolTipEventHandler opening = (_, _) => requests++;
+            element.ToolTipOpening += opening;
+            try
+            {
+                var bounds = Bounds(element);
+                view.MouseMove((int)(bounds.X + bounds.Width / 2), (int)(bounds.Y + bounds.Height / 2));
+                view.Update(time += 0.1); System.Threading.Thread.Sleep(1); view.Update(time += 0.1);
+                return requests;
+            }
+            finally { element.ToolTipOpening -= opening; }
         }
         internal void Click(FrameworkElement element)
         {

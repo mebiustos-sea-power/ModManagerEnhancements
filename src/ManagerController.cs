@@ -183,7 +183,15 @@ internal sealed class ManagerController
             { pair.Value.Dispose(); rows.Remove(pair.Key); }
         foreach (var pair in visible)
         {
-            if (!rows.TryGetValue(pair.Key, out var badge)) rows.Add(pair.Key, badge = new RowBadge(pair.Key, pair.Value, Open, rowMetrics));
+            if (!rows.TryGetValue(pair.Key, out var badge))
+            {
+                var source = pair.Value;
+                string? warning = source.HasCompatibilityInfo && !source.MatchesVersion()
+                    ? text.CompatibilityTooltip
+                    : null;
+                badge = new RowBadge(pair.Key, source, Open, rowMetrics, warning);
+                rows.Add(pair.Key, badge);
+            }
             badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, filter.Id),
                 content?.ContainsDll(pair.Value.DirectoryInfo.FullName) == true, text);
         }

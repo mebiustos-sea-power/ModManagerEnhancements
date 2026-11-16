@@ -24,13 +24,15 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 
 Targets the latest Sea Power release and requires a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.17.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.18.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
 Changes to your mod selection and order are saved with the game's existing **Accept** button.
 
 ## What the badges mean
+
+A yellow warning triangle marks a mod when the game version falls outside the range its author declared. This also applies to disabled mods.
 
 The `DLL` badge identifies DLL file presence in the mod folder and its subfolders; it does not establish whether a plugin has loaded successfully. DLL files are not opened or executed for this check.
 
@@ -54,7 +56,7 @@ Copy `Directory.Build.local.props.example` to `Directory.Build.local.props` and 
 
 The package is written to `dist/ModManagerEnhancements`. The build does not install the mod, start the game, or alter game settings.
 
-The regression suite passes 34 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers DLL/content presence, partial and wildcard matching, disabled mods, nested files, file additions/removals, independent scan recovery, file priority, content comparison, filtering, cancellation, stale results, and errors. Six standalone Noesis checks cover badge order, source-icon and fixed-arrow alignment, source-icon hover, pointer targets, highlighting, row detachment/recreation, search/type combinations, scoped selection, and restoration of the native list and bindings. These checks do not render the live game window or verify the full game UI theme.
+The regression suite passes 36 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers DLL/content presence, partial and wildcard matching, disabled mods, nested files, file additions/removals, independent scan recovery, file priority, content comparison, filtering, cancellation, stale results, and errors. Seven standalone Noesis checks cover compatibility warning placement and hover, badge order, source-icon and fixed-arrow alignment, source-icon hover, pointer targets, highlighting, row detachment/recreation, search/type combinations, scoped selection, and restoration of the native list and bindings. These checks do not render the live game window or verify the full game UI theme.
 
 Source layout:
 
@@ -63,6 +65,6 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests`, `tests/UI`, and `tools/test-mono.ps1`: core behavior and native Noesis checks in separate processes.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.17`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.18`.
 
 The source indicator uses the official Steam store icon embedded in this mod. Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries. The artwork is sourced from the [official Steam store icon](https://store.steampowered.com/favicon.ico).

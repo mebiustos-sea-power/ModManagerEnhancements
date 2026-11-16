@@ -13,6 +13,7 @@ internal sealed class RowBadge : IDisposable
     private readonly RowMetrics metrics;
     private readonly Button button;
     private readonly Border dllBadge;
+    private readonly Border? compatibilityBadge;
     private readonly TextBlock preferred = new() { Name = "ModManagerEnhancementsPreferred" };
     private readonly TextBlock overridden = new() { Name = "ModManagerEnhancementsOverridden" };
     private readonly TextBlock dllLabel;
@@ -22,18 +23,21 @@ internal sealed class RowBadge : IDisposable
     private readonly Brush selectedBackground = new SolidColorBrush(Color.FromArgb(255, 35, 65, 75));
     private readonly Brush transparent = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
     private readonly ColumnDefinition column, dllColumn;
+    private readonly ColumnDefinition? compatibilityColumn;
     private readonly Action<SearchDirectory> open;
     private readonly (UIElement Child, int Column)[] shifted;
     private readonly (ColumnDefinition Column, GridLength Width)[] nativeGaps;
     private SourceIndicator? sourceIndicator;
 
-    internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics)
+    internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics, string? compatibilityWarning = null)
     {
         this.row = row; Source = source; this.open = open; this.metrics = metrics;
         if (row.ColumnDefinitions.Count != 9) throw new InvalidOperationException("The mod row no longer has the expected grid layout.");
         column = new ColumnDefinition(); dllColumn = new ColumnDefinition { Width = GridLength.Auto };
         nativeGaps = new[] { 5, 7 }.Select(i => (row.ColumnDefinitions[i], row.ColumnDefinitions[i].Width)).ToArray();
-        shifted = row.Children.Cast<UIElement>().Where(c => Grid.GetColumn(c) >= 5).Select(c => (c, Grid.GetColumn(c))).ToArray();
+        int warningColumns = compatibilityWarning == null ? 0 : 1;
+        shifted = row.Children.Cast<UIElement>().Where(c => Grid.GetColumn(c) >= 5 - warningColumns)
+            .Select(c => (c, Grid.GetColumn(c))).ToArray();
         var counts = new Grid();
         counts.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         counts.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(4) });
@@ -45,6 +49,29 @@ internal sealed class RowBadge : IDisposable
         dllBadge = new Border { Name = "ModManagerEnhancementsDllBadge", Padding = new Thickness(2, 0, 2, 0),
             Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed,
             BorderThickness = new Thickness(0), Background = transparent, Child = dllLabel };
+        if (compatibilityWarning != null)
+        {
+            compatibilityColumn = new ColumnDefinition { Width = GridLength.Auto };
+            var icon = new Noesis.Path
+            {
+                Data = Geometry.Parse("F0 M8,0 L16,14 L0,14 Z M7,4 L9,4 L9,9 L7,9 Z M7,10 L9,10 L9,12 L7,12 Z"),
+                Fill = new SolidColorBrush(Color.FromRgb(255, 206, 82)),
+                Width = 16,
+                Height = 14,
+                Stretch = Stretch.Uniform
+            };
+            compatibilityBadge = new Border
+            {
+                Name = "ModManagerEnhancementsCompatibilityWarning",
+                Background = transparent,
+                Margin = new Thickness(4, 0, 4, 0),
+                Padding = new Thickness(2, 0, 2, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = icon,
+                ToolTip = compatibilityWarning
+            };
+        }
+
         button = new Button { Name = "ModManagerEnhancementsOverrides", MinWidth = 0,
             HorizontalAlignment = HorizontalAlignment.Right, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Padding = new Thickness(4, 1, 4, 1), Margin = new Thickness(4, 0, 4, 0),
@@ -54,14 +81,21 @@ internal sealed class RowBadge : IDisposable
         try
         {
             sourceIndicator = new SourceIndicator(row);
-            // Icon and DLL margins supply spacing around the native dependency warning.
+            // The neighboring indicators supply spacing around the native dependency warning.
             foreach (var gap in nativeGaps) gap.Column.Width = new GridLength(0);
-            // Keep native A before DLL, with source indicators and fixed override slots on the right.
             row.ColumnDefinitions.Insert(5, dllColumn);
+            // Only warned rows gain a column, immediately before native A.
+            if (compatibilityColumn != null && compatibilityBadge != null)
+            {
+                row.ColumnDefinitions.Insert(4, compatibilityColumn);
+                Grid.SetColumn(compatibilityBadge, 4);
+                row.Children.Add(compatibilityBadge);
+            }
             row.ColumnDefinitions.Add(column);
-            foreach (var item in shifted) Grid.SetColumn(item.Child, item.Column + 1);
-            Grid.SetColumn(dllBadge, 5); row.Children.Add(dllBadge);
-            Grid.SetColumn(button, 10); row.Children.Add(button);
+            foreach (var item in shifted)
+                Grid.SetColumn(item.Child, item.Column + warningColumns + (item.Column >= 5 ? 1 : 0));
+            Grid.SetColumn(dllBadge, 5 + warningColumns); row.Children.Add(dllBadge);
+            Grid.SetColumn(button, row.ColumnDefinitions.Count - 1); row.Children.Add(button);
         }
         catch { Dispose(); throw; }
     }
@@ -91,13 +125,13 @@ internal sealed class RowBadge : IDisposable
     {
         button.Click -= Click;
         row.Children.Remove(button); row.Children.Remove(dllBadge);
+        if (compatibilityBadge != null) row.Children.Remove(compatibilityBadge);
         sourceIndicator?.Dispose(); sourceIndicator = null;
         foreach (var gap in nativeGaps) gap.Column.Width = gap.Width;
         if (row.ColumnDefinitions.Contains(column)) row.ColumnDefinitions.Remove(column);
-        if (row.ColumnDefinitions.Contains(dllColumn))
-        {
-            row.ColumnDefinitions.Remove(dllColumn);
-            foreach (var item in shifted) if (row.Children.Contains(item.Child)) Grid.SetColumn(item.Child, item.Column);
-        }
+        if (row.ColumnDefinitions.Contains(dllColumn)) row.ColumnDefinitions.Remove(dllColumn);
+        if (compatibilityColumn != null && row.ColumnDefinitions.Contains(compatibilityColumn))
+            row.ColumnDefinitions.Remove(compatibilityColumn);
+        foreach (var item in shifted) if (row.Children.Contains(item.Child)) Grid.SetColumn(item.Child, item.Column);
     }
 }
