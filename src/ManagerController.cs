@@ -25,6 +25,7 @@ internal sealed class ManagerController
     private object? originalRightPane;
     private Border? details;
     private ModListSearch? listSearch;
+    private CompatibilityActions? compatibilityActions;
     private Button? all, refresh;
     private TrulyObservableCollection<SearchDirectory>? directories;
     private ScanSession<ConflictReport>? session;
@@ -77,6 +78,18 @@ internal sealed class ManagerController
             var left = page.ShortLeftPane as Grid ?? throw new InvalidOperationException("The native MOD list pane is not a Grid.");
             listSearch = new ModListSearch(left, FindDirectoryList(left), model.Directories,
                 model.SelectAllCommand, model.SelectNoneCommand, text, () => renderDirty = true);
+            compatibilityActions = new CompatibilityActions(Application.version, text, ShowCompatibilityDialog,
+                message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
+                message => WindowHostCommands.CloseWindowCommand.CanExecute(message.Model, view),
+                (source, restoring) =>
+                {
+                    bool before = CompatibilityMetadata.IsOutOfRange(source);
+                    CompatibilityMetadata.Reload(source, model.Directories.Concat(FileManager.Instance.Directories));
+                    renderDirty = true;
+                    bool after = CompatibilityMetadata.IsOutOfRange(source);
+                    Plugin.Info($"Supported-version {(restoring ? "restore" : "override")}: '{source.Name}' ({source.DirectoryInfo.FullName}); out of range: {before} -> {after}.");
+                    if (!restoring && after) throw new InvalidDataException("The metadata was updated, but the game still considers this mod out of range.");
+                }, Plugin.Error);
             mounted = true;
             Plugin.Active = this;
             Observe(model.Directories);
@@ -169,6 +182,13 @@ internal sealed class ManagerController
     private void Open(SearchDirectory source)
     { filter.Toggle(source.DirectoryInfo.FullName, source.Name); Render(); }
 
+    private void ShowCompatibilityDialog(NativeMessageBox message)
+    {
+        if (!WindowHostCommands.OpenWindowCommand.CanExecute(message.Model, view))
+            throw new InvalidOperationException("The mod manager cannot display the confirmation dialog.");
+        WindowHostCommands.OpenWindowCommand.Execute(message.Model, view);
+    }
+
     private void UpdateRows()
     {
         if (!(page!.ShortLeftPane is DependencyObject left)) throw new InvalidOperationException("The mod manager's list pane is unavailable.");
@@ -178,23 +198,28 @@ internal sealed class ManagerController
             if (node is CheckBox check && check.DataContext is SearchDirectory source && check.Parent is Grid row && Grid.GetColumn(check) == 2)
                 visible[row] = source;
         });
+        var compatibility = visible.ToDictionary(pair => pair.Key, pair => new CompatibilityRow(pair.Value,
+            CompatibilityMetadata.IsOutOfRange(pair.Value), CompatibilityMetadata.GetOverride(pair.Value, Plugin.Error)));
         foreach (var pair in rows.ToArray())
-            if (!visible.TryGetValue(pair.Key, out var source) || !ReferenceEquals(source, pair.Value.Source))
+            if (!visible.TryGetValue(pair.Key, out var source) || !ReferenceEquals(source, pair.Value.Source) ||
+                pair.Value.HasCompatibilityWarning != compatibility[pair.Key].OutOfRange ||
+                pair.Value.ShowsCompatibilityOverride != (!compatibility[pair.Key].OutOfRange && compatibility[pair.Key].Modified))
             { pair.Value.Dispose(); rows.Remove(pair.Key); }
         foreach (var pair in visible)
         {
             if (!rows.TryGetValue(pair.Key, out var badge))
             {
                 var source = pair.Value;
-                string? warning = source.HasCompatibilityInfo && !source.MatchesVersion()
+                string? warning = compatibility[pair.Key].OutOfRange
                     ? text.CompatibilityTooltip
                     : null;
-                badge = new RowBadge(pair.Key, source, Open, rowMetrics, warning);
+                badge = new RowBadge(pair.Key, source, Open, rowMetrics, warning, compatibility[pair.Key].Modified);
                 rows.Add(pair.Key, badge);
             }
             badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, filter.Id),
                 content?.ContainsDll(pair.Value.DirectoryInfo.FullName) == true, text);
         }
+        compatibilityActions!.UpdateRows(compatibility);
         listSearch!.UpdateRows(visible.Keys);
     }
 
@@ -234,6 +259,7 @@ internal sealed class ManagerController
         if (directories != null) directories.CollectionChanged -= CollectionChanged;
         foreach (var item in observed) item.PropertyChanged -= ItemChanged;
         observed.Clear(); directories = null;
+        compatibilityActions?.Dispose(); compatibilityActions = null;
         foreach (var badge in rows.Values) badge.Dispose();
         rows.Clear();
         listSearch?.Dispose(); listSearch = null;

@@ -196,6 +196,38 @@ internal static class Program
                         f.Row.ColumnDefinitions.Count == 9 && f.Original.All(p => Grid.GetColumn(p.Key) == p.Value),
                         "Detaching the row left its compatibility warning behind.");
                 });
+                Test("changed-version pencils share the warning slot and remain passive", () =>
+                {
+                    using var changed = new Fixture(compatibilityModified: true);
+                    using var warned = new Fixture(compatibilityWarning: new ModText("ja").CompatibilityTooltip, compatibilityModified: true);
+                    var pencil = changed.Row.Children.OfType<Border>().Single(b => b.Name == "ModManagerEnhancementsCompatibilityOverride");
+                    foreach (string language in new[] { "ja", "en" })
+                        foreach (int width in new[] { 480, 800 })
+                        {
+                            var text = new ModText(language);
+                            changed.SetOrigin(true); warned.SetOrigin(true);
+                            changed.Anchor.Visibility = warned.Anchor.Visibility = Visibility.Visible;
+                            changed.Badge.Update(new BadgeModel(changed.Report, changed.Id, null), true, text);
+                            warned.Badge.Update(new BadgeModel(warned.Report, warned.Id, null), true, text);
+                            changed.Layout(width); warned.Layout(width);
+                            Require(changed.CompatibilityWarning == null && warned.CompatibilityWarning != null &&
+                                !warned.Row.Children.OfType<Border>().Any(b => b.Name == "ModManagerEnhancementsCompatibilityOverride"),
+                                "The warning did not take priority over the pencil.");
+                            Require(Near(changed.Bounds(changed.Anchor).X, warned.Bounds(warned.Anchor).X) &&
+                                Near(changed.Bounds(changed.Origin).X, warned.Bounds(warned.Origin).X) &&
+                                Near(changed.Bounds(changed.Arrows).X, warned.Bounds(warned.Arrows).X),
+                                "The pencil used different spacing from the warning.");
+                            Require((string)pencil.ToolTip == text.CompatibilityModifiedTooltip && changed.HoverCenter(pencil) > 0,
+                                "The changed-version tooltip did not follow language or pointer position.");
+                            bool? active = changed.Check.IsChecked;
+                            changed.Click(pencil);
+                            Require(changed.Check.IsChecked == active && changed.NativeClicks == 0 && changed.Filters == 0,
+                                "The status icon performed an unintended action.");
+                        }
+                    changed.Badge.Dispose(); changed.Layout(480);
+                    Require(changed.Row.ColumnDefinitions.Count == 9 && changed.Row.Children.Count == changed.Original.Count,
+                        "Detaching left the pencil or its column behind.");
+                });
                 Test("detaching restores the native shared caption, source bindings and layout", () =>
                 {
                     using var f = new Fixture();
@@ -225,6 +257,7 @@ internal static class Program
                     Require(resource.Caption.Text == "Updated Workshop", "The original caption's dynamic-resource reference was lost.");
                 });
                 SearchUiTests.Run(Test);
+                CompatibilityUiTests.Run(Test);
                 Console.WriteLine($"Passed {passed} native UI checks without launching or attaching to Sea Power.");
             }
             finally { GUI.Shutdown(); }
@@ -272,7 +305,7 @@ internal static class Program
             return null;
         }
 
-        internal Fixture(bool resourceCaption = false, string? compatibilityWarning = null)
+        internal Fixture(bool resourceCaption = false, string? compatibilityWarning = null, bool compatibilityModified = false)
         {
 #pragma warning disable SYSLIB0050
             Source = (SearchDirectory)FormatterServices.GetUninitializedObject(typeof(SearchDirectory));
@@ -293,7 +326,7 @@ internal static class Program
 
             if (resourceCaption) { Row.Resources["Caption"] = "Workshop"; Caption.SetResourceReference(TextBlock.TextProperty, "Caption"); }
             Original = Row.Children.Cast<UIElement>().ToDictionary(c => c, Grid.GetColumn);
-            Report = Counts(1, 1); Badge = new RowBadge(Row, Source, Select, Metrics, compatibilityWarning); view = GUI.CreateView(Row);
+            Report = Counts(1, 1); Badge = new RowBadge(Row, Source, Select, Metrics, compatibilityWarning, compatibilityModified); view = GUI.CreateView(Row);
         }
 
         internal ConflictReport Counts(int up, int down)

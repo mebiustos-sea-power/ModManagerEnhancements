@@ -27,6 +27,21 @@ internal sealed class ModText
     internal string FilteredSelection(string name) => ja ? "表示対象：" + name : "Filtered by: " + name;
     internal string DllTooltip => ja ? "DLLファイルを含むMODです。" : "This mod contains DLL files.";
     internal string CompatibilityTooltip => ja ? "バージョン範囲外" : "Game version out of range";
+    internal string SetCompatibility => ja ? "対応バージョンを現在のゲーム版に変更" : "Set supported version to current game version";
+    internal string RestoreCompatibility => ja ? "対応バージョンを元に戻す" : "Restore supported version";
+    internal string RestoreButton => ja ? "元に戻す" : "Restore";
+    internal string CompatibilityModifiedTooltip => ja ? "MMEで対応バージョンを変更済み" : "Supported version changed by MME";
+    internal string CompatibilityTitle => ja ? "対応バージョンの変更" : "Change supported version";
+    internal string CompatibilityConfirmation(string name, string version) => ja
+        ? $"「{name}」の_info.iniを書き換え、対応バージョンを\n現在のSea Power（{version}）に変更します。\n\n動作保証はできません。\n変更後は右クリックの「対応バージョンを元に戻す」で復元できます。"
+        : $"Update {name}'s _info.ini to set its supported version\nto the current Sea Power version ({version}).\n\nThis does not guarantee the mod will work.\nAfter changing it, use “Restore supported version” from the right-click menu to undo.";
+    internal string CompatibilityRestoreConfirmation(string name) => ja
+        ? $"「{name}」の対応バージョンを、MMEで変更する前の設定に戻します。"
+        : $"Restore {name}'s supported version to the setting saved before MME changed it.";
+    internal string CompatibilityFailure(string reason) => ja ? "変更処理に失敗しました。\n" + reason : "The change could not be completed.\n" + reason;
+    internal string Cancel => ja ? "キャンセル" : "Cancel";
+    internal string Change => ja ? "変更" : "Change";
+    internal string Close => ja ? "閉じる" : "Close";
     internal string LocalTooltip => ja ? "ローカルMOD" : "Local mod";
     internal string WorkshopTooltip => ja ? "Steamワークショップ" : "Steam Workshop";
     internal string Refresh => ja ? "再スキャン" : "Rescan";

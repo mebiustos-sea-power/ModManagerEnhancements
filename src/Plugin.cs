@@ -56,6 +56,7 @@ public sealed class Plugin : IAnchorChainMod
         _ = Controllers.GetValue(__instance, view => new ManagerController(view));
     });
     internal static bool SamePath(string left, string right) => string.Equals(Path.GetFullPath(left).TrimEnd('\\', '/'), Path.GetFullPath(right).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+    internal static void Info(string message) => Log.LogInfo(message);
     internal static void Error(Exception error) => Log.LogError(error);
     internal static void Guard(Action action) { try { action(); } catch (Exception error) { Error(error); } }
 }

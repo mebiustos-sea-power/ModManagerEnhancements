@@ -18,13 +18,15 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 - Lists providers in priority order. Hover over a file to inspect its full source paths.
 - Updates after changes to enabled mods, drag order, dependency sorting, or profiles. **Rescan** rereads edited, added, or deleted files.
 - Keeps the game's existing mod controls. File details do not have a click-selection state.
+- Right-click a mod with a version warning to set its supported version to the current game version. Confirm with **Cancel** on the left and **Change** on the right. This edits `[Compatibility]` / `ExactVersion` and saves the original setting as `OriginalExactVersionData` under `[ModManagerEnhancements]` in the same `_info.ini`. Changing the declaration does not guarantee the mod will work.
+- A muted blue-gray pencil identifies a mod with a saved original setting. **Restore supported version** is first in its right-click menu and asks for confirmation before restoring. It restores the first saved setting even after repeated overrides or manual edits, while preserving unrelated settings and comments. A version warning takes priority over the pencil. The confirmation is canceled if the file changes while it is open. Workshop updates that replace `_info.ini` may remove the saved record.
 - Uses Japanese when the game language is Japanese, and English otherwise.
 
 ## Installation
 
 Targets the latest Sea Power release and requires a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.18.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.19.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
@@ -40,7 +42,7 @@ The mod compares files with the same relative path in enabled mods. For ordinary
 
 INI files can be merged by key depending on how they are read. An INI entry therefore describes file-provider priority; it does not establish which individual keys will be used. These entries include a note in the details panel.
 
-This mod does not analyze DLL dependencies, duplicate plugin IDs, Harmony patch interactions, or incompatibilities between differently named files. It does not change files or automatically reorder mods. An override can be an intentional replacement rather than an error.
+This mod does not analyze DLL dependencies, duplicate plugin IDs, Harmony patch interactions, or incompatibilities between differently named files. It edits `_info.ini` only when you confirm a supported-version change and does not automatically reorder mods. An override can be an intentional replacement rather than an error.
 
 A missing or unreadable mod file is reported in the panel and the BepInEx log. Linked subdirectories are reported as scan errors rather than silently skipped.
 
@@ -56,7 +58,7 @@ Copy `Directory.Build.local.props.example` to `Directory.Build.local.props` and 
 
 The package is written to `dist/ModManagerEnhancements`. The build does not install the mod, start the game, or alter game settings.
 
-The regression suite passes 36 checks under .NET 10 and separately under the game's bundled Mono runtime. It covers DLL/content presence, partial and wildcard matching, disabled mods, nested files, file additions/removals, independent scan recovery, file priority, content comparison, filtering, cancellation, stale results, and errors. Seven standalone Noesis checks cover compatibility warning placement and hover, badge order, source-icon and fixed-arrow alignment, source-icon hover, pointer targets, highlighting, row detachment/recreation, search/type combinations, scoped selection, and restoration of the native list and bindings. These checks do not render the live game window or verify the full game UI theme.
+The regression suite covers DLL/content presence, partial and wildcard matching, disabled mods, nested files, file additions/removals, independent scan recovery, file priority, content comparison, filtering, cancellation, stale results, errors, and compatibility edits that preserve other metadata and reject concurrent file changes. Standalone Noesis checks cover compatibility warning placement and hover, badge order, source-icon and fixed-arrow alignment, source-icon hover, pointer targets, highlighting, row detachment/recreation, search/type combinations, scoped selection, restoration of the native list and bindings, and confirmation/cancellation of compatibility edits. These checks do not render the live game window or verify the full game UI theme.
 
 Source layout:
 
@@ -65,6 +67,6 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests`, `tests/UI`, and `tools/test-mono.ps1`: core behavior and native Noesis checks in separate processes.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.18`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.19`.
 
 The source indicator uses the official Steam store icon embedded in this mod. Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries. The artwork is sourced from the [official Steam store icon](https://store.steampowered.com/favicon.ico).

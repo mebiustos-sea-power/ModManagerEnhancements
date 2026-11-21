@@ -9,6 +9,8 @@ namespace ModManagerEnhancements;
 internal sealed class RowBadge : IDisposable
 {
     internal SearchDirectory Source { get; }
+    internal bool HasCompatibilityWarning { get; }
+    internal bool ShowsCompatibilityOverride { get; }
     private readonly Grid row;
     private readonly RowMetrics metrics;
     private readonly Button button;
@@ -29,13 +31,15 @@ internal sealed class RowBadge : IDisposable
     private readonly (ColumnDefinition Column, GridLength Width)[] nativeGaps;
     private SourceIndicator? sourceIndicator;
 
-    internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics, string? compatibilityWarning = null)
+    internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics, string? compatibilityWarning = null, bool compatibilityModified = false)
     {
         this.row = row; Source = source; this.open = open; this.metrics = metrics;
+        HasCompatibilityWarning = compatibilityWarning != null;
+        ShowsCompatibilityOverride = !HasCompatibilityWarning && compatibilityModified;
         if (row.ColumnDefinitions.Count != 9) throw new InvalidOperationException("The mod row no longer has the expected grid layout.");
         column = new ColumnDefinition(); dllColumn = new ColumnDefinition { Width = GridLength.Auto };
         nativeGaps = new[] { 5, 7 }.Select(i => (row.ColumnDefinitions[i], row.ColumnDefinitions[i].Width)).ToArray();
-        int warningColumns = compatibilityWarning == null ? 0 : 1;
+        int warningColumns = HasCompatibilityWarning || ShowsCompatibilityOverride ? 1 : 0;
         shifted = row.Children.Cast<UIElement>().Where(c => Grid.GetColumn(c) >= 5 - warningColumns)
             .Select(c => (c, Grid.GetColumn(c))).ToArray();
         var counts = new Grid();
@@ -49,20 +53,25 @@ internal sealed class RowBadge : IDisposable
         dllBadge = new Border { Name = "ModManagerEnhancementsDllBadge", Padding = new Thickness(2, 0, 2, 0),
             Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed,
             BorderThickness = new Thickness(0), Background = transparent, Child = dllLabel };
-        if (compatibilityWarning != null)
+        if (HasCompatibilityWarning || ShowsCompatibilityOverride)
         {
             compatibilityColumn = new ColumnDefinition { Width = GridLength.Auto };
-            var icon = new Noesis.Path
+            var icon = HasCompatibilityWarning ? new Noesis.Path
             {
                 Data = Geometry.Parse("F0 M8,0 L16,14 L0,14 Z M7,4 L9,4 L9,9 L7,9 Z M7,10 L9,10 L9,12 L7,12 Z"),
                 Fill = new SolidColorBrush(Color.FromRgb(255, 206, 82)),
                 Width = 16,
                 Height = 14,
                 Stretch = Stretch.Uniform
+            } : new Noesis.Path
+            {
+                Data = Geometry.Parse("M2,10 L10,2 L14,6 L6,14 L2,14 Z M8.5,3.5 L12.5,7.5 M2,10 L6,14"),
+                Stroke = new SolidColorBrush(Color.FromRgb(158, 179, 191)), StrokeThickness = 1.3f,
+                Width = 16, Height = 14, Stretch = Stretch.Uniform
             };
             compatibilityBadge = new Border
             {
-                Name = "ModManagerEnhancementsCompatibilityWarning",
+                Name = HasCompatibilityWarning ? "ModManagerEnhancementsCompatibilityWarning" : "ModManagerEnhancementsCompatibilityOverride",
                 Background = transparent,
                 Margin = new Thickness(4, 0, 4, 0),
                 Padding = new Thickness(2, 0, 2, 0),
@@ -84,7 +93,7 @@ internal sealed class RowBadge : IDisposable
             // The neighboring indicators supply spacing around the native dependency warning.
             foreach (var gap in nativeGaps) gap.Column.Width = new GridLength(0);
             row.ColumnDefinitions.Insert(5, dllColumn);
-            // Only warned rows gain a column, immediately before native A.
+            // Only rows with a compatibility indicator gain a column, immediately before native A.
             if (compatibilityColumn != null && compatibilityBadge != null)
             {
                 row.ColumnDefinitions.Insert(4, compatibilityColumn);
@@ -102,6 +111,7 @@ internal sealed class RowBadge : IDisposable
 
     internal void Update(BadgeModel model, bool containsDll, ModText text)
     {
+        if (ShowsCompatibilityOverride) compatibilityBadge!.ToolTip = text.CompatibilityModifiedTooltip;
         metrics.Update(preferred);
         preferred.Width = overridden.Width = metrics.DirectionWidth;
         column.Width = new GridLength(metrics.OverrideColumnWidth); button.Width = metrics.ButtonWidth;
