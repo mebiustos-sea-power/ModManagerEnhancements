@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="..\..\src\Core\**\*.cs" LinkBase="Core" />
     <Compile Include="..\..\src\UI\*.cs" LinkBase="UI" />
+    <Compile Include="..\..\src\WorkshopUpdates.cs" Link="WorkshopUpdates.cs" />
     <EmbeddedResource Include="..\..\src\UI\ModListSearch.xaml" LogicalName="ModManagerEnhancements.ModListSearch.xaml" />
     <EmbeddedResource Include="..\..\assets\ui\steam-48.pbgra" LogicalName="ModManagerEnhancements.Steam.pbgra" />
     <Reference Include="Seapower-Scripts" HintPath="$(SeaPowerDir)\Sea Power_Data\Managed\Seapower-Scripts.dll" Private="false" ExternallyResolved="true" />

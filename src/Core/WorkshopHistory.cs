@@ -7,26 +7,39 @@ using System.Text;
 
 namespace ModManagerEnhancements.Core;
 
-internal static class WorkshopHistory
+internal sealed class WorkshopHistory
 {
-    internal static HashSet<ulong> Open(string path, IReadOnlyDictionary<ulong, uint> installed)
+    private readonly string path;
+    private readonly Dictionary<ulong, uint> observations;
+    private readonly HashSet<ulong> changed = new();
+    private bool pending;
+
+    internal bool HasUpdates => changed.Count != 0;
+    internal bool Changed(ulong id) => changed.Contains(id);
+
+    // Detection is read-only; acknowledging a visit never clears this run's visible changes.
+    internal WorkshopHistory(string path, IReadOnlyDictionary<ulong, uint> installed)
     {
-        var previous = Read(path);
-        var changed = new HashSet<ulong>();
-        bool save = false;
+        this.path = path;
+        observations = Read(path);
         foreach (var item in installed)
         {
             if (item.Key == 0 || item.Value == 0) throw new InvalidDataException("Invalid Workshop update information.");
-            if (previous.TryGetValue(item.Key, out uint timestamp))
+            if (observations.TryGetValue(item.Key, out uint timestamp))
             {
                 if (timestamp == item.Value) continue;
                 changed.Add(item.Key);
             }
-            previous[item.Key] = item.Value;
-            save = true;
+            observations[item.Key] = item.Value;
+            pending = true;
         }
-        if (save) Write(path, previous);
-        return changed;
+    }
+
+    internal void Acknowledge()
+    {
+        if (!pending) return;
+        Write(path, observations);
+        pending = false;
     }
 
     private static Dictionary<ulong, uint> Read(string path)

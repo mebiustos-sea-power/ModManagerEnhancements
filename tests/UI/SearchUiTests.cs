@@ -28,6 +28,29 @@ internal static class SearchUiTests
         </ResourceDictionary>"));
         try
         {
+            test("acknowledged Workshop updates remain filterable after the manager is reopened", () =>
+            {
+                using var f = new Fixture();
+                string historyPath = Path.Combine(Path.GetTempPath(), "mme-filter-session-" + Guid.NewGuid().ToString("N") + ".txt");
+                try
+                {
+                    new WorkshopHistory(historyPath, new Dictionary<ulong, uint> { [3832319500] = 100 }).Acknowledge();
+                    var session = new WorkshopUpdates(f.State.Directories, historyPath, error => throw error,
+                        id => id == 3832319500 ? 101U : null);
+                    for (int opening = 0; opening < 3; opening++)
+                    {
+                        f.Search.Dispose(); f.Search = f.CreateSearch(updated: session.Changed);
+                        session.Acknowledge();
+                        f.Search.KindBox.SelectedIndex = 5; f.Layout();
+                        Require(f.Search.Visible.Single() == f.Enhancements && session.HasUpdates,
+                            "Acknowledging or reopening consumed the shared updated-only result.");
+                    }
+                    var nextRun = new WorkshopUpdates(f.State.Directories, historyPath, error => throw error,
+                        id => id == 3832319500 ? 101U : null);
+                    Require(!nextRun.HasUpdates, "The next launch repeated already acknowledged updates.");
+                }
+                finally { if (File.Exists(historyPath)) File.Delete(historyPath); }
+            });
             test("native list search combines names IDs wildcards and kinds without changing the source", () =>
             {
                 using var f = new Fixture(); var original = f.State.Directories.ToArray();
@@ -261,10 +284,10 @@ internal static class SearchUiTests
             view = GUI.CreateView(Root); view.SetSize(800, 600); view.Update(time += 0.1);
             Search = CreateSearch(); Layout();
         }
-        internal ModListSearch CreateSearch(Action? changed = null)
+        internal ModListSearch CreateSearch(Action? changed = null, Func<SearchDirectory, bool>? updated = null)
         {
             var result = new ModListSearch(Host, List, State.Directories, State.SelectAllCommand, State.SelectNoneCommand,
-                new ModText("ja"), changed ?? (() => { }), source => source.IsSteam && Updated.Contains(source));
+                new ModText("ja"), changed ?? (() => { }), updated ?? (source => source.IsSteam && Updated.Contains(source)));
             result.SetInventory(Inventory, null); return result;
         }
         private SearchDirectory Item(string name, string folder, bool active, bool steam = false, ulong id = 0, bool editable = true)

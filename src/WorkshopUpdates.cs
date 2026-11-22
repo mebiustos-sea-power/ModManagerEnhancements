@@ -7,14 +7,17 @@ using Steamworks;
 
 namespace ModManagerEnhancements;
 
-// One snapshot per opening; row refreshes and search never consume the visible marks.
+// Shared for the game process; menus only display or acknowledge this installed snapshot.
 internal sealed class WorkshopUpdates
 {
-    private readonly HashSet<ulong> changed = new();
+    private readonly WorkshopHistory? history;
+    private readonly Action<Exception> logError;
+    private bool acknowledged;
 
     internal WorkshopUpdates(IEnumerable<SearchDirectory> sources, string path, Action<Exception> logError,
         Func<ulong, uint?>? readTimestamp = null)
     {
+        this.logError = logError;
         readTimestamp ??= InstalledTimestamp;
         var installed = new Dictionary<ulong, uint>();
         foreach (ulong id in sources.Where(source => source.IsSteam).Select(source => source.steamId.m_PublishedFileId).Distinct())
@@ -26,11 +29,20 @@ internal sealed class WorkshopUpdates
             }
             catch (Exception error) { logError(error); }
         }
-        try { changed = WorkshopHistory.Open(path, installed); }
+        try { history = new WorkshopHistory(path, installed); }
         catch (Exception error) { logError(error); }
     }
 
-    internal bool Changed(SearchDirectory source) => source.IsSteam && changed.Contains(source.steamId.m_PublishedFileId);
+    internal bool HasUpdates => history?.HasUpdates == true;
+    internal bool HasUnseenUpdates => HasUpdates && !acknowledged;
+    internal bool Changed(SearchDirectory source) => source.IsSteam && history?.Changed(source.steamId.m_PublishedFileId) == true;
+
+    internal void Acknowledge()
+    {
+        acknowledged = true;
+        try { history?.Acknowledge(); }
+        catch (Exception error) { logError(error); }
+    }
 
     private static uint? InstalledTimestamp(ulong id) =>
         SteamUGC.GetItemInstallInfo(new PublishedFileId_t(id), out _, out _, 4096, out uint timestamp) ? timestamp : null;

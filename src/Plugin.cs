@@ -16,7 +16,11 @@ public sealed class Plugin : IAnchorChainMod
 {
     private static readonly ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource(ModInfo.Name);
     private static readonly ConditionalWeakTable<ModMenuView, ManagerController> Controllers = new();
+    private static readonly ConditionalWeakTable<MainMenuView, MainMenuUpdates> MainMenus = new();
+    private static WorkshopUpdates? updates;
     private static bool initialized;
+    internal static WorkshopUpdates Updates => updates ??= new WorkshopUpdates(FileManager.Instance.Directories,
+        Path.Combine(Application.persistentDataPath, "ModManagerEnhancements", "workshop-updates.txt"), Error);
     internal static ManagerController? Active { get; set; }
 
     public void TriggerEntryPoint()
@@ -36,9 +40,13 @@ public sealed class Plugin : IAnchorChainMod
             var constructor = AccessTools.Constructor(typeof(ModMenuView), Type.EmptyTypes)
                 ?? throw new MissingMethodException(typeof(ModMenuView).FullName, ".ctor");
             patches.Patch(constructor, postfix: new HarmonyMethod(typeof(Plugin), nameof(MenuCreated)));
+            var mainConstructor = AccessTools.Constructor(typeof(MainMenuView), Type.EmptyTypes)
+                ?? throw new MissingMethodException(typeof(MainMenuView).FullName, ".ctor");
+            patches.Patch(mainConstructor, postfix: new HarmonyMethod(typeof(Plugin), nameof(MainMenuCreated)));
             host = new GameObject("ModManagerEnhancements.Runtime");
             UnityEngine.Object.DontDestroyOnLoad(host);
             host.AddComponent<ManagerDriver>();
+            if (MainMenuView.Instance != null) MainMenuCreated(MainMenuView.Instance);
             if (ModMenuView.Instance != null) MenuCreated(ModMenuView.Instance);
             Log.LogInfo("Initialized " + ModInfo.Version + ". File overrides are shown in the built-in mod manager.");
         }
@@ -54,6 +62,10 @@ public sealed class Plugin : IAnchorChainMod
     private static void MenuCreated(ModMenuView __instance) => Guard(() =>
     {
         _ = Controllers.GetValue(__instance, view => new ManagerController(view));
+    });
+    private static void MainMenuCreated(MainMenuView __instance) => Guard(() =>
+    {
+        _ = MainMenus.GetValue(__instance, view => new MainMenuUpdates(view, () => Updates.HasUnseenUpdates, Error));
     });
     internal static bool SamePath(string left, string right) => string.Equals(Path.GetFullPath(left).TrimEnd('\\', '/'), Path.GetFullPath(right).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
     internal static void Info(string message) => Log.LogInfo(message);

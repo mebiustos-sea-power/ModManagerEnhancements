@@ -60,6 +60,7 @@ internal sealed class ManagerController
             page = view.Content as MenuPage ?? throw new InvalidOperationException("The mod manager no longer contains a MenuPage.");
             var model = view.DataContext as ModMenuViewModel ?? throw new InvalidOperationException("The mod manager's view model is unavailable.");
             text = new ModText(LanguageResourceHandler.Instance.Language);
+            workshopUpdates = Plugin.Updates;
             originalRightPane = page.RightPane;
             if (!(originalRightPane is UIElement original)) throw new InvalidOperationException("The mod manager's right pane is not a UI element.");
             using var stream = typeof(ManagerController).Assembly.GetManifestResourceStream("ModManagerEnhancements.DetailsPanel.xaml")
@@ -98,8 +99,7 @@ internal sealed class ManagerController
             Plugin.Active = this;
             Observe(model.Directories);
             Invalidate();
-            workshopUpdates = new WorkshopUpdates(model.Directories,
-                Path.Combine(Application.persistentDataPath, "ModManagerEnhancements", "workshop-updates.txt"), Plugin.Error);
+            workshopUpdates.Acknowledge();
         }
         catch { Unmount(); throw; }
     }
