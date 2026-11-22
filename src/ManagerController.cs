@@ -25,6 +25,7 @@ internal sealed class ManagerController
     private object? originalRightPane;
     private Border? details;
     private ModListSearch? listSearch;
+    private RowRefresh? rowRefresh;
     private CompatibilityActions? compatibilityActions;
     private WorkshopUpdates? workshopUpdates;
     private Button? all, refresh;
@@ -37,7 +38,7 @@ internal sealed class ManagerController
     private ModText text = new("en");
     private Exception? failure;
     private readonly ModFilter filter = new();
-    private bool mounted, dirty, contentDirty, renderDirty;
+    private bool mounted, dirty, contentDirty;
     private float scanAt, rowsAt;
 
     internal ManagerController(ModMenuView view)
@@ -77,8 +78,9 @@ internal sealed class ManagerController
             session = new ScanSession<ConflictReport>(new ConflictScanner().Scan, Plugin.Error);
             contentSession = new ScanSession<ModContentInventory>(new ModContentScanner().Scan, Plugin.Error);
             var left = page.ShortLeftPane as Grid ?? throw new InvalidOperationException("The native MOD list pane is not a Grid.");
+            rowRefresh = new RowRefresh(left, RefreshRows);
             listSearch = new ModListSearch(left, FindDirectoryList(left), model.Directories,
-                model.SelectAllCommand, model.SelectNoneCommand, text, () => renderDirty = true,
+                model.SelectAllCommand, model.SelectNoneCommand, text, RequestRows,
                 source => workshopUpdates?.Changed(source) == true);
             compatibilityActions = new CompatibilityActions(Application.version, text, ShowCompatibilityDialog,
                 message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
@@ -87,7 +89,7 @@ internal sealed class ManagerController
                 {
                     bool before = CompatibilityMetadata.IsOutOfRange(source);
                     CompatibilityMetadata.Reload(source, model.Directories.Concat(FileManager.Instance.Directories));
-                    renderDirty = true;
+                    RequestRows();
                     bool after = CompatibilityMetadata.IsOutOfRange(source);
                     Plugin.Info($"Supported-version {(restoring ? "restore" : "override")}: '{source.Name}' ({source.DirectoryInfo.FullName}); out of range: {before} -> {after}.");
                     if (!restoring && after) throw new InvalidDataException("The metadata was updated, but the game still considers this mod out of range.");
@@ -135,9 +137,9 @@ internal sealed class ManagerController
             listSearch!.SetInventory(content, contentFailure);
             Render();
         }
-        if (renderDirty || Time.realtimeSinceStartup >= rowsAt)
+        if (Time.realtimeSinceStartup >= rowsAt)
         {
-            UpdateRows(); renderDirty = false; rowsAt = Time.realtimeSinceStartup + 0.5f;
+            UpdateRows(); rowsAt = Time.realtimeSinceStartup + 0.5f;
         }
     }
 
@@ -179,7 +181,7 @@ internal sealed class ManagerController
     private void Render()
     {
         if (details != null) details.DataContext = new DetailsModel(text, report, filter.Id, filter.Name, failure ?? contentFailure);
-        renderDirty = true;
+        RequestRows();
     }
     private void All(object sender, RoutedEventArgs args) => Plugin.Guard(() => { filter.Clear(); Render(); });
     private void Refresh(object sender, RoutedEventArgs args) => Plugin.Guard(() => Invalidate());
@@ -191,6 +193,15 @@ internal sealed class ManagerController
         if (!WindowHostCommands.OpenWindowCommand.CanExecute(message.Model, view))
             throw new InvalidOperationException("The mod manager cannot display the confirmation dialog.");
         WindowHostCommands.OpenWindowCommand.Execute(message.Model, view);
+    }
+
+    private void RequestRows() => rowRefresh?.Request();
+
+    private void RefreshRows()
+    {
+        if (!mounted) return;
+        try { UpdateRows(); rowsAt = Time.realtimeSinceStartup + 0.5f; }
+        catch (Exception error) { Fail(error); }
     }
 
     private void UpdateRows()
@@ -260,6 +271,7 @@ internal sealed class ManagerController
     {
         if (ReferenceEquals(Plugin.Active, this)) Plugin.Active = null;
         mounted = false;
+        rowRefresh?.Dispose(); rowRefresh = null;
         workshopUpdates = null;
         session?.Dispose(); session = null;
         contentSession?.Dispose(); contentSession = null; content = null; contentFailure = null; contentDirty = false;

@@ -93,6 +93,75 @@ internal static class SearchUiTests
                     f.State.Directories.SequenceEqual(original) && f.Updated.Count == 3,
                     "Switching or refreshing filters consumed marks or reordered the source.");
             });
+            test("new rows receive icons in the first layout after filtering even after an early row pass", () =>
+            {
+                using var f = new Fixture();
+                f.Search.Dispose();
+                var badges = new Dictionary<Grid, RowBadge>();
+                var metrics = new RowMetrics();
+                int applications = 0;
+                bool HasVisibleIcon(DependencyObject node)
+                {
+                    if (node is Image image) return image.ActualWidth > 0 && image.ActualHeight > 0;
+                    if (node is Noesis.Path path) return path.ActualWidth > 0 && path.ActualHeight > 0;
+                    for (int i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
+                        if (HasVisibleIcon(VisualTreeHelper.GetChild(node, i))) return true;
+                    return false;
+                }
+                void Decorate()
+                {
+                    applications++;
+                    var current = f.Rows().ToDictionary(row => row, row => (SearchDirectory)row.DataContext);
+                    foreach (var pair in badges.ToArray())
+                        if (!current.TryGetValue(pair.Key, out var source) || !ReferenceEquals(source, pair.Value.Source))
+                        { pair.Value.Dispose(); badges.Remove(pair.Key); }
+                    foreach (var pair in current)
+                    {
+                        if (!badges.TryGetValue(pair.Key, out var badge))
+                        {
+                            badge = new RowBadge(pair.Key, pair.Value, _ => { }, metrics);
+                            badges.Add(pair.Key, badge);
+                        }
+                        badge.Update(new BadgeModel(null, pair.Value.DirectoryInfo.FullName, null),
+                            (f.Inventory.Kinds(pair.Value.DirectoryInfo.FullName) & ModContent.Dll) != 0, new ModText("ja"));
+                    }
+                }
+                using var refresh = new RowRefresh(f.Host, Decorate);
+                void FirstFrame()
+                {
+                    // Match the driver's possible early scan; it must not consume the layout request.
+                    Decorate();
+                    f.Layout();
+                    var rows = f.Rows();
+                    Require(rows.Length == f.Search.Visible.Count && rows.All(row =>
+                        row.Children.OfType<Border>().Any(border => border.Name == "ModManagerEnhancementsDllBadge" &&
+                            (border.Visibility == Visibility.Collapsed || (border.ActualWidth > 0 && border.ActualHeight > 0))) &&
+                        row.Children.OfType<Button>().Where(button => button.Name != "ModManagerEnhancementsOverrides")
+                            .Any(button => button.ContentTemplate != null && HasVisibleIcon(button))),
+                        "The first frame exposed an undecorated row or the native Local/Workshop caption.");
+                }
+                try
+                {
+                    f.Updated.Add(f.Enhancements);
+                    f.Search = f.CreateSearch(refresh.Request);
+                    FirstFrame();
+                    foreach (int kind in new[] { 5, 3, 4 })
+                    {
+                        f.Search.KindBox.SelectedIndex = kind; FirstFrame();
+                        f.Search.KindBox.SelectedIndex = 0; FirstFrame();
+                    }
+                    f.Search.SearchBox.Text = "F-"; FirstFrame();
+                    f.Search.SearchBox.Text = ""; FirstFrame();
+                    int before = applications;
+                    refresh.Request(); refresh.Request(); f.Layout();
+                    Require(applications == before + 1, "Repeated layout requests did not coalesce.");
+                    refresh.Dispose();
+                    before = applications;
+                    f.Search.SearchBox.Text = "Other"; f.Layout();
+                    Require(applications == before, "A detached layout handler continued decorating rows.");
+                }
+                finally { foreach (var badge in badges.Values) badge.Dispose(); }
+            });
             test("filtered native bulk actions keep captions and affect visible enabled MODs only", () =>
             {
                 using var f = new Fixture(); f.Search.SearchBox.Text = "*F-*"; f.Layout();
@@ -178,7 +247,12 @@ internal static class SearchUiTests
                     <Border Padding='0,2,16,2'><Grid><Grid.ContextMenu><ContextMenu>
                       <MenuItem Header='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.AllCaption}' Command='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.SelectAllCommand}'/>
                       <MenuItem Header='選択解除' Command='{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DataContext.SelectNoneCommand}'/>
-                    </ContextMenu></Grid.ContextMenu><TextBlock Text='{Binding Name}'/></Grid>
+                    </ContextMenu></Grid.ContextMenu>
+                      <Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='Auto'/><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/><ColumnDefinition Width='Auto'/><ColumnDefinition Width='5'/><ColumnDefinition Width='Auto'/><ColumnDefinition Width='5'/><ColumnDefinition Width='Auto'/></Grid.ColumnDefinitions>
+                      <CheckBox Grid.Column='2' IsChecked='{Binding IsChecked, Mode=TwoWay}'/>
+                      <TextBlock Grid.Column='3' Text='{Binding Name}'/>
+                      <Button Grid.Column='8' IsEnabled='{Binding IsSteam}'><TextBlock Text='Workshop'/></Button>
+                    </Grid>
                     </Border>
                   </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
                 </ScrollViewer><Button Grid.Row='2' Content='Sort'/><TextBlock Grid.Row='3'/>
@@ -187,10 +261,10 @@ internal static class SearchUiTests
             view = GUI.CreateView(Root); view.SetSize(800, 600); view.Update(time += 0.1);
             Search = CreateSearch(); Layout();
         }
-        internal ModListSearch CreateSearch()
+        internal ModListSearch CreateSearch(Action? changed = null)
         {
             var result = new ModListSearch(Host, List, State.Directories, State.SelectAllCommand, State.SelectNoneCommand,
-                new ModText("ja"), () => { }, source => source.IsSteam && Updated.Contains(source));
+                new ModText("ja"), changed ?? (() => { }), source => source.IsSteam && Updated.Contains(source));
             result.SetInventory(Inventory, null); return result;
         }
         private SearchDirectory Item(string name, string folder, bool active, bool steam = false, ulong id = 0, bool editable = true)
