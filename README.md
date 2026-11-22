@@ -22,11 +22,13 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 - A muted blue-gray pencil identifies a mod with a saved original setting. **Restore supported version** is first in its right-click menu and asks for confirmation before restoring. It restores the first saved setting even after repeated overrides or manual edits, while preserving unrelated settings and comments. A version warning takes priority over the pencil. The confirmation is canceled if the file changes while it is open. Workshop updates that replace `_info.ini` may remove the saved record.
 - Uses Japanese when the game language is Japanese, and English otherwise.
 
+- Marks Workshop mods updated since the previous visit with a small light-blue dot. Choose **Updated** in the dropdown to show only marked mods; name and Workshop ID search still apply. Marks remain for the current visit; reopening the manager shows only newly observed updates. The first visit establishes a baseline.
+
 ## Installation
 
 Targets the latest Sea Power release and requires a working [Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757) installation.
 
-1. Download `ModManagerEnhancements-v0.1.19.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
+1. Download `ModManagerEnhancements-v0.1.20.zip` from [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases).
 2. Extract the `ModManagerEnhancements` folder into `Sea Power_Data/StreamingAssets`.
 3. Enable this mod and Anchor Chain in the game's mod manager, then fully exit and restart Sea Power.
 
@@ -67,6 +69,6 @@ Source layout:
 - `src/Plugin.cs`: activation check and Anchor Chain startup.
 - `tests`, `tests/UI`, and `tools/test-mono.ps1`: core behavior and native Noesis checks in separate processes.
 
-Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.19`.
+Plugin ID: `mebiustos.modmanagerenhancements`. Version: `0.1.20`.
 
 The source indicator uses the official Steam store icon embedded in this mod. Steam and the Steam logo are trademarks and/or registered trademarks of Valve Corporation in the U.S. and/or other countries. The artwork is sourced from the [official Steam store icon](https://store.steampowered.com/favicon.ico).

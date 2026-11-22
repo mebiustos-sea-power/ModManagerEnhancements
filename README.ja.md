@@ -21,11 +21,13 @@ Sea Powerの既存MODマネージャーに、検索・種類フィルター、DL
 - バージョン警告があるMODの右クリックメニューから、対応バージョンを現在のゲーム版に変更できます。確認ダイアログは左が「キャンセル」、右が「変更」です。そのMODの `_info.ini` の `[Compatibility]` / `ExactVersion` を書き換え、元の設定を同じファイルの `[ModManagerEnhancements]` に `OriginalExactVersionData` として保存します。対応バージョンの変更は動作を保証するものではありません。
 - 元の設定を保存したMODには青灰色の鉛筆を表示し、右クリックメニュー先頭に「対応バージョンを元に戻す」を追加します。確認後、繰り返しの書き換えや手動編集があっても最初に保存した設定へ戻し、他の設定やコメントは保持します。範囲外の警告は鉛筆より優先します。確認ダイアログ表示中にファイルが変わった場合は処理を止めます。Workshop更新で `_info.ini` が置き換わると保存記録も失われる場合があります。
 
+- 前回のMODマネージャー表示時から更新されたWorkshop MODに、小さな水色の丸を表示します。ドロップダウンの「更新あり」で対象だけを絞り込め、MOD名・Workshop IDの検索と併用できます。表示中はマークを維持し、次回開いたときは新たな更新分だけを表示します。初回は比較元の記録のみ行います。
+
 ## 導入
 
 Sea Powerの最新版を対象とし、動作する[Anchor Chain](https://steamcommunity.com/sharedfiles/filedetails/?id=3380210757)環境が必要です。
 
-1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.19.zip` を取得します。
+1. [Releases](https://github.com/mebiustos-sea-power/ModManagerEnhancements/releases)から `ModManagerEnhancements-v0.1.20.zip` を取得します。
 2. 展開した `ModManagerEnhancements` フォルダを `Sea Power_Data/StreamingAssets` へ配置します。
 3. ゲーム内で本MODとAnchor Chainを有効にし、Sea Powerを完全に終了して再起動します。
 
@@ -64,6 +66,6 @@ Windowsの.NET 10 SDK、インストール済みのゲームとAnchor Chainが�
 - `src/Plugin.cs`: 有効状態の確認とAnchor Chain起動処理。
 - `tests`、`tests/UI`、`tools/test-mono.ps1`: 機能検証と独立したMono・Noesis検証プロセス。
 
-識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.19`。
+識別子: `mebiustos.modmanagerenhancements`。バージョン: `0.1.20`。
 
 入手元の表示には、Steam公式ストアのアイコンをMOD内に埋め込んで使用しています。SteamおよびSteamロゴは、米国およびその他の国におけるValve Corporationの商標または登録商標です。出典は[Steam公式ストアのアイコン](https://store.steampowered.com/favicon.ico)です。

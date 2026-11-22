@@ -26,6 +26,7 @@ internal sealed class ManagerController
     private Border? details;
     private ModListSearch? listSearch;
     private CompatibilityActions? compatibilityActions;
+    private WorkshopUpdates? workshopUpdates;
     private Button? all, refresh;
     private TrulyObservableCollection<SearchDirectory>? directories;
     private ScanSession<ConflictReport>? session;
@@ -77,7 +78,8 @@ internal sealed class ManagerController
             contentSession = new ScanSession<ModContentInventory>(new ModContentScanner().Scan, Plugin.Error);
             var left = page.ShortLeftPane as Grid ?? throw new InvalidOperationException("The native MOD list pane is not a Grid.");
             listSearch = new ModListSearch(left, FindDirectoryList(left), model.Directories,
-                model.SelectAllCommand, model.SelectNoneCommand, text, () => renderDirty = true);
+                model.SelectAllCommand, model.SelectNoneCommand, text, () => renderDirty = true,
+                source => workshopUpdates?.Changed(source) == true);
             compatibilityActions = new CompatibilityActions(Application.version, text, ShowCompatibilityDialog,
                 message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
                 message => WindowHostCommands.CloseWindowCommand.CanExecute(message.Model, view),
@@ -94,6 +96,8 @@ internal sealed class ManagerController
             Plugin.Active = this;
             Observe(model.Directories);
             Invalidate();
+            workshopUpdates = new WorkshopUpdates(model.Directories,
+                Path.Combine(Application.persistentDataPath, "ModManagerEnhancements", "workshop-updates.txt"), Plugin.Error);
         }
         catch { Unmount(); throw; }
     }
@@ -203,7 +207,8 @@ internal sealed class ManagerController
         foreach (var pair in rows.ToArray())
             if (!visible.TryGetValue(pair.Key, out var source) || !ReferenceEquals(source, pair.Value.Source) ||
                 pair.Value.HasCompatibilityWarning != compatibility[pair.Key].OutOfRange ||
-                pair.Value.ShowsCompatibilityOverride != (!compatibility[pair.Key].OutOfRange && compatibility[pair.Key].Modified))
+                pair.Value.ShowsCompatibilityOverride != (!compatibility[pair.Key].OutOfRange && compatibility[pair.Key].Modified) ||
+                pair.Value.ShowsWorkshopUpdate != (workshopUpdates?.Changed(pair.Value.Source) == true))
             { pair.Value.Dispose(); rows.Remove(pair.Key); }
         foreach (var pair in visible)
         {
@@ -213,7 +218,8 @@ internal sealed class ManagerController
                 string? warning = compatibility[pair.Key].OutOfRange
                     ? text.CompatibilityTooltip
                     : null;
-                badge = new RowBadge(pair.Key, source, Open, rowMetrics, warning, compatibility[pair.Key].Modified);
+                badge = new RowBadge(pair.Key, source, Open, rowMetrics, warning, compatibility[pair.Key].Modified,
+                    workshopUpdates?.Changed(source) == true);
                 rows.Add(pair.Key, badge);
             }
             badge.Update(new BadgeModel(report, pair.Value.DirectoryInfo.FullName, filter.Id),
@@ -254,6 +260,7 @@ internal sealed class ManagerController
     {
         if (ReferenceEquals(Plugin.Active, this)) Plugin.Active = null;
         mounted = false;
+        workshopUpdates = null;
         session?.Dispose(); session = null;
         contentSession?.Dispose(); contentSession = null; content = null; contentFailure = null; contentDirty = false;
         if (directories != null) directories.CollectionChanged -= CollectionChanged;

@@ -22,6 +22,7 @@ internal sealed class ModListSearch : IDisposable
     private readonly Dictionary<Grid, RowScope> scopes = new();
     private readonly ModText text;
     private readonly Action changed;
+    private readonly Func<SearchDirectory, bool> updated;
     private readonly ICommand nativeAll, nativeNone, scopedAll, scopedNone;
     private IList<SearchDirectory> source;
     private ModContentInventory? inventory;
@@ -39,9 +40,10 @@ internal sealed class ModListSearch : IDisposable
     internal bool IsFiltered => filter.IsActive;
 
     internal ModListSearch(Grid host, ItemsControl list, IList<SearchDirectory> source,
-        ICommand nativeAll, ICommand nativeNone, ModText text, Action changed)
+        ICommand nativeAll, ICommand nativeNone, ModText text, Action changed, Func<SearchDirectory, bool> updated)
     {
         this.host = host; this.list = list; this.source = source; this.text = text; this.changed = changed;
+        this.updated = updated;
         this.nativeAll = nativeAll; this.nativeNone = nativeNone;
         scopedAll = new SelectionCommand(this, nativeAll, true); scopedNone = new SelectionCommand(this, nativeNone, false);
         itemsSource = new NativeProperty(list, ItemsControl.ItemsSourceProperty);
@@ -61,6 +63,7 @@ internal sealed class ModListSearch : IDisposable
         placeholder = Named<TextBlock>("SearchPlaceholder"); empty = Named<TextBlock>("NoMatchingMods");
         placeholder.Text = text.SearchPlaceholder; ClearButton.ToolTip = text.ClearSearch;
         foreach (var choice in Choices) KindBox.Items.Add(new ComboBoxItem { Content = text.KindName(choice) });
+        KindBox.Items.Add(new ComboBoxItem { Content = text.UpdatedFilter });
         KindBox.SelectedIndex = 0;
         try
         {
@@ -84,10 +87,13 @@ internal sealed class ModListSearch : IDisposable
     internal void Refresh()
     {
         if (disposed) return;
-        filter = new ModListFilter(SearchBox.Text, Choices[Math.Max(0, KindBox.SelectedIndex)]);
+        int choice = Math.Max(0, KindBox.SelectedIndex);
+        bool updatedOnly = choice == Choices.Length;
+        filter = new ModListFilter(SearchBox.Text, updatedOnly ? ModContent.None : Choices[choice], updatedOnly);
         bool waiting = filter.Kind != ModContent.None && inventory == null;
         var wanted = waiting ? Array.Empty<SearchDirectory>() : source.Where(item => filter.Matches(item.Name,
-            item.IsSteam ? item.steamId.ToString() : "", inventory?.Kinds(item.DirectoryInfo.FullName) ?? ModContent.None)).ToArray();
+            item.IsSteam ? item.steamId.ToString() : "", inventory?.Kinds(item.DirectoryInfo.FullName) ?? ModContent.None,
+            filter.UpdatedOnly && updated(item))).ToArray();
         // The projection keeps the original objects and load order; it never edits the saved list.
         for (int i = 0; i < wanted.Length; i++)
         {

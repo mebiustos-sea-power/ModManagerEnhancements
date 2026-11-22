@@ -228,6 +228,53 @@ internal static class Program
                     Require(changed.Row.ColumnDefinitions.Count == 9 && changed.Row.Children.Count == changed.Original.Count,
                         "Detaching left the pencil or its column behind.");
                 });
+                Test("Workshop update dots stay leftmost passive and do not reserve space in unchanged rows", () =>
+                {
+                    foreach (string status in new[] { "none", "warning", "pencil" })
+                    {
+                        string? warning = status == "warning" ? new ModText("ja").CompatibilityTooltip : null;
+                        using var baseline = new Fixture(compatibilityWarning: warning, compatibilityModified: status == "pencil");
+                        using var f = new Fixture(compatibilityWarning: warning, compatibilityModified: status == "pencil", workshopUpdated: true);
+                        var dot = f.Row.Children.OfType<Border>().Single(b => b.Name == "ModManagerEnhancementsWorkshopUpdate");
+                        f.SetOrigin(true); baseline.SetOrigin(true);
+                        f.Anchor.Visibility = baseline.Anchor.Visibility = Visibility.Visible;
+                        foreach (string language in new[] { "ja", "en" })
+                        foreach (int width in new[] { 480, 800 })
+                        foreach (bool enabled in new[] { false, true })
+                        {
+                            var text = new ModText(language);
+                            f.Check.IsChecked = enabled;
+                            f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, text);
+                            baseline.Badge.Update(new BadgeModel(baseline.Report, baseline.Id, null), true, text);
+                            f.Layout(width); baseline.Layout(width);
+                            var next = f.Row.Children.OfType<Border>().FirstOrDefault(b =>
+                                b.Name == "ModManagerEnhancementsCompatibilityWarning" || b.Name == "ModManagerEnhancementsCompatibilityOverride");
+                            var nextBounds = next == null ? f.Bounds(f.Anchor) : f.Bounds(next);
+                            var bounds = f.Bounds(dot);
+                            Require(bounds.Width > 0 && bounds.X + bounds.Width <= nextBounds.X,
+                                "The update dot overlaps or follows another status icon.");
+                            Require(Near(f.Bounds(f.Anchor).X, baseline.Bounds(baseline.Anchor).X) &&
+                                Near(f.Bounds(f.Dll).X, baseline.Bounds(baseline.Dll).X) &&
+                                Near(f.Bounds(f.Origin).X, baseline.Bounds(baseline.Origin).X) &&
+                                Near(f.Bounds(f.Arrows).X, baseline.Bounds(baseline.Arrows).X) &&
+                                f.Row.ColumnDefinitions.Count == baseline.Row.ColumnDefinitions.Count + 1 &&
+                                f.NameLabel.ActualWidth < baseline.NameLabel.ActualWidth,
+                                "The dot changed trailing controls or reserved space in an unchanged row.");
+                            Require((string)dot.ToolTip == text.WorkshopUpdatedTooltip && f.HoverCenter(dot) > 0,
+                                "The update dot did not expose its localized tooltip.");
+                            f.Click(dot);
+                            Require(f.Check.IsChecked == enabled && f.Filters == 0 && f.NativeClicks == 0,
+                                "The passive update dot performed an action.");
+                        }
+                        f.Badge.Dispose();
+                        f.Badge = new RowBadge(f.Row, f.Source, _ => f.Filters++, f.Metrics, warning, status == "pencil");
+                        f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja"));
+                        f.Layout(480);
+                        Require(!f.Row.Children.OfType<Border>().Any(b => b.Name == "ModManagerEnhancementsWorkshopUpdate") &&
+                            f.Row.ColumnDefinitions.Count == baseline.Row.ColumnDefinitions.Count,
+                            "Reusing a row left a consumed update dot or its column behind.");
+                    }
+                });
                 Test("detaching restores the native shared caption, source bindings and layout", () =>
                 {
                     using var f = new Fixture();
@@ -258,6 +305,7 @@ internal static class Program
                 });
                 SearchUiTests.Run(Test);
                 CompatibilityUiTests.Run(Test);
+                WorkshopUpdateTests.Run(Test);
                 Console.WriteLine($"Passed {passed} native UI checks without launching or attaching to Sea Power.");
             }
             finally { GUI.Shutdown(); }
@@ -305,7 +353,7 @@ internal static class Program
             return null;
         }
 
-        internal Fixture(bool resourceCaption = false, string? compatibilityWarning = null, bool compatibilityModified = false)
+        internal Fixture(bool resourceCaption = false, string? compatibilityWarning = null, bool compatibilityModified = false, bool workshopUpdated = false)
         {
 #pragma warning disable SYSLIB0050
             Source = (SearchDirectory)FormatterServices.GetUninitializedObject(typeof(SearchDirectory));
@@ -326,7 +374,7 @@ internal static class Program
 
             if (resourceCaption) { Row.Resources["Caption"] = "Workshop"; Caption.SetResourceReference(TextBlock.TextProperty, "Caption"); }
             Original = Row.Children.Cast<UIElement>().ToDictionary(c => c, Grid.GetColumn);
-            Report = Counts(1, 1); Badge = new RowBadge(Row, Source, Select, Metrics, compatibilityWarning, compatibilityModified); view = GUI.CreateView(Row);
+            Report = Counts(1, 1); Badge = new RowBadge(Row, Source, Select, Metrics, compatibilityWarning, compatibilityModified, workshopUpdated); view = GUI.CreateView(Row);
         }
 
         internal ConflictReport Counts(int up, int down)

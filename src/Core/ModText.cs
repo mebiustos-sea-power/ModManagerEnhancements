@@ -27,6 +27,8 @@ internal sealed class ModText
     internal string FilteredSelection(string name) => ja ? "表示対象：" + name : "Filtered by: " + name;
     internal string DllTooltip => ja ? "DLLファイルを含むMODです。" : "This mod contains DLL files.";
     internal string CompatibilityTooltip => ja ? "バージョン範囲外" : "Game version out of range";
+    internal string WorkshopUpdatedTooltip => ja ? "前回から更新あり" : "Updated since last visit";
+    internal string UpdatedFilter => ja ? "更新あり" : "Updated";
     internal string SetCompatibility => ja ? "対応バージョンを現在のゲーム版に変更" : "Set supported version to current game version";
     internal string RestoreCompatibility => ja ? "対応バージョンを元に戻す" : "Restore supported version";
     internal string RestoreButton => ja ? "元に戻す" : "Restore";

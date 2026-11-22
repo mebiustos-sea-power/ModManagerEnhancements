@@ -37,6 +37,7 @@ internal static class Program
             DllTests.Run(Test);
             SearchTests.Run(Test);
             CompatibilityEditTests.Run(Test);
+            WorkshopHistoryTests.Run(Test);
             Test("priority follows current order in both directions", () =>
             {
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B");

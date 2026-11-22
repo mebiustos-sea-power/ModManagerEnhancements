@@ -6,16 +6,18 @@ internal sealed class ModListFilter
 {
     internal string Query { get; }
     internal ModContent Kind { get; }
-    internal bool IsActive => Query.Length != 0 || Kind != ModContent.None;
+    internal bool UpdatedOnly { get; }
+    internal bool IsActive => Query.Length != 0 || Kind != ModContent.None || UpdatedOnly;
     private readonly bool wildcard;
 
-    internal ModListFilter(string query, ModContent kind)
+    internal ModListFilter(string query, ModContent kind, bool updatedOnly = false)
     {
-        Query = query.Trim(); Kind = kind;
+        Query = query.Trim(); Kind = kind; UpdatedOnly = updatedOnly;
         wildcard = Query.IndexOfAny(new[] { '*', '?' }) >= 0;
     }
 
-    internal bool Matches(string name, string workshopId, ModContent contents) =>
+    internal bool Matches(string name, string workshopId, ModContent contents, bool updated = false) =>
+        (!UpdatedOnly || updated) &&
         (Kind == ModContent.None || (contents & Kind) != 0) &&
         (MatchesText(name) || (workshopId.Length != 0 && MatchesText(workshopId)));
 

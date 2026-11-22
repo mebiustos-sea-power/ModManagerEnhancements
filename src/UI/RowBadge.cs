@@ -11,11 +11,13 @@ internal sealed class RowBadge : IDisposable
     internal SearchDirectory Source { get; }
     internal bool HasCompatibilityWarning { get; }
     internal bool ShowsCompatibilityOverride { get; }
+    internal bool ShowsWorkshopUpdate { get; }
     private readonly Grid row;
     private readonly RowMetrics metrics;
     private readonly Button button;
     private readonly Border dllBadge;
     private readonly Border? compatibilityBadge;
+    private readonly Border? updateBadge;
     private readonly TextBlock preferred = new() { Name = "ModManagerEnhancementsPreferred" };
     private readonly TextBlock overridden = new() { Name = "ModManagerEnhancementsOverridden" };
     private readonly TextBlock dllLabel;
@@ -26,21 +28,24 @@ internal sealed class RowBadge : IDisposable
     private readonly Brush transparent = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
     private readonly ColumnDefinition column, dllColumn;
     private readonly ColumnDefinition? compatibilityColumn;
+    private readonly ColumnDefinition? updateColumn;
     private readonly Action<SearchDirectory> open;
     private readonly (UIElement Child, int Column)[] shifted;
     private readonly (ColumnDefinition Column, GridLength Width)[] nativeGaps;
     private SourceIndicator? sourceIndicator;
 
-    internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics, string? compatibilityWarning = null, bool compatibilityModified = false)
+    internal RowBadge(Grid row, SearchDirectory source, Action<SearchDirectory> open, RowMetrics metrics, string? compatibilityWarning = null,
+        bool compatibilityModified = false, bool workshopUpdated = false)
     {
         this.row = row; Source = source; this.open = open; this.metrics = metrics;
         HasCompatibilityWarning = compatibilityWarning != null;
         ShowsCompatibilityOverride = !HasCompatibilityWarning && compatibilityModified;
+        ShowsWorkshopUpdate = workshopUpdated;
         if (row.ColumnDefinitions.Count != 9) throw new InvalidOperationException("The mod row no longer has the expected grid layout.");
         column = new ColumnDefinition(); dllColumn = new ColumnDefinition { Width = GridLength.Auto };
         nativeGaps = new[] { 5, 7 }.Select(i => (row.ColumnDefinitions[i], row.ColumnDefinitions[i].Width)).ToArray();
-        int warningColumns = HasCompatibilityWarning || ShowsCompatibilityOverride ? 1 : 0;
-        shifted = row.Children.Cast<UIElement>().Where(c => Grid.GetColumn(c) >= 5 - warningColumns)
+        int statusColumns = (HasCompatibilityWarning || ShowsCompatibilityOverride ? 1 : 0) + (ShowsWorkshopUpdate ? 1 : 0);
+        shifted = row.Children.Cast<UIElement>().Where(c => Grid.GetColumn(c) >= (statusColumns > 0 ? 4 : 5))
             .Select(c => (c, Grid.GetColumn(c))).ToArray();
         var counts = new Grid();
         counts.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -81,6 +86,18 @@ internal sealed class RowBadge : IDisposable
             };
         }
 
+        if (ShowsWorkshopUpdate)
+        {
+            updateColumn = new ColumnDefinition { Width = GridLength.Auto };
+            updateBadge = new Border
+            {
+                Name = "ModManagerEnhancementsWorkshopUpdate", Background = transparent,
+                Margin = new Thickness(4, 0, 4, 0), Padding = new Thickness(2, 0, 2, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Child = new Ellipse { Width = 10, Height = 10, Fill = new SolidColorBrush(Color.FromRgb(126, 217, 242)) }
+            };
+        }
+
         button = new Button { Name = "ModManagerEnhancementsOverrides", MinWidth = 0,
             HorizontalAlignment = HorizontalAlignment.Right, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Padding = new Thickness(4, 1, 4, 1), Margin = new Thickness(4, 0, 4, 0),
@@ -93,17 +110,23 @@ internal sealed class RowBadge : IDisposable
             // The neighboring indicators supply spacing around the native dependency warning.
             foreach (var gap in nativeGaps) gap.Column.Width = new GridLength(0);
             row.ColumnDefinitions.Insert(5, dllColumn);
-            // Only rows with a compatibility indicator gain a column, immediately before native A.
+            // Status columns precede native A and consume space only in the rows that show them.
             if (compatibilityColumn != null && compatibilityBadge != null)
             {
                 row.ColumnDefinitions.Insert(4, compatibilityColumn);
-                Grid.SetColumn(compatibilityBadge, 4);
+                Grid.SetColumn(compatibilityBadge, 4 + (ShowsWorkshopUpdate ? 1 : 0));
                 row.Children.Add(compatibilityBadge);
+            }
+            if (updateColumn != null && updateBadge != null)
+            {
+                row.ColumnDefinitions.Insert(4, updateColumn);
+                Grid.SetColumn(updateBadge, 4);
+                row.Children.Add(updateBadge);
             }
             row.ColumnDefinitions.Add(column);
             foreach (var item in shifted)
-                Grid.SetColumn(item.Child, item.Column + warningColumns + (item.Column >= 5 ? 1 : 0));
-            Grid.SetColumn(dllBadge, 5 + warningColumns); row.Children.Add(dllBadge);
+                Grid.SetColumn(item.Child, item.Column + statusColumns + (item.Column >= 5 ? 1 : 0));
+            Grid.SetColumn(dllBadge, 5 + statusColumns); row.Children.Add(dllBadge);
             Grid.SetColumn(button, row.ColumnDefinitions.Count - 1); row.Children.Add(button);
         }
         catch { Dispose(); throw; }
@@ -112,6 +135,7 @@ internal sealed class RowBadge : IDisposable
     internal void Update(BadgeModel model, bool containsDll, ModText text)
     {
         if (ShowsCompatibilityOverride) compatibilityBadge!.ToolTip = text.CompatibilityModifiedTooltip;
+        if (updateBadge != null) updateBadge.ToolTip = text.WorkshopUpdatedTooltip;
         metrics.Update(preferred);
         preferred.Width = overridden.Width = metrics.DirectionWidth;
         column.Width = new GridLength(metrics.OverrideColumnWidth); button.Width = metrics.ButtonWidth;
@@ -136,12 +160,14 @@ internal sealed class RowBadge : IDisposable
         button.Click -= Click;
         row.Children.Remove(button); row.Children.Remove(dllBadge);
         if (compatibilityBadge != null) row.Children.Remove(compatibilityBadge);
+        if (updateBadge != null) row.Children.Remove(updateBadge);
         sourceIndicator?.Dispose(); sourceIndicator = null;
         foreach (var gap in nativeGaps) gap.Column.Width = gap.Width;
         if (row.ColumnDefinitions.Contains(column)) row.ColumnDefinitions.Remove(column);
         if (row.ColumnDefinitions.Contains(dllColumn)) row.ColumnDefinitions.Remove(dllColumn);
         if (compatibilityColumn != null && row.ColumnDefinitions.Contains(compatibilityColumn))
             row.ColumnDefinitions.Remove(compatibilityColumn);
+        if (updateColumn != null && row.ColumnDefinitions.Contains(updateColumn)) row.ColumnDefinitions.Remove(updateColumn);
         foreach (var item in shifted) if (row.Children.Contains(item.Child)) Grid.SetColumn(item.Child, item.Column);
     }
 }

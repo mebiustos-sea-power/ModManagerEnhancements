@@ -58,6 +58,41 @@ internal static class SearchUiTests
                 Require(f.State.Directories.SequenceEqual(original) && f.Mission.IsChecked && !f.OtherMission.IsChecked && f.F15.IsChecked && !f.F2.IsChecked,
                     "Search modified the full source, its order or its enabled states.");
             });
+            test("updated-only selection combines with search and scopes bulk actions without consuming marks", () =>
+            {
+                using var f = new Fixture();
+                var original = f.State.Directories.ToArray();
+                var anchor = f.State.Directories[0];
+                f.Updated.UnionWith(new[] { anchor, f.Enhancements, f.Mission });
+                var option = f.Search.KindBox.Items.OfType<ComboBoxItem>().Single(item => (string)item.Content == "更新あり");
+                int updatedIndex = f.Search.KindBox.Items.IndexOf(option);
+                f.Search.KindBox.SelectedIndex = updatedIndex; f.Layout();
+                Require(f.Search.Visible.SequenceEqual(new[] { anchor, f.Enhancements }) &&
+                    f.Search.Counter.Text == "2 / 7", "The update choice missed marked Workshop mods or included a local mod.");
+                var actions = f.Rows().First().ContextMenu.Items.OfType<MenuItem>().ToArray();
+                actions[1].Command.Execute(null);
+                Require(!anchor.IsChecked && !f.Enhancements.IsChecked && f.Mission.IsChecked &&
+                    f.F15.IsChecked && f.State.NativeNoneCalls == 0,
+                    "An update-only filter without a query did not scope select-none.");
+                f.Search.SetInventory(null, new IOException("Content scan failed")); f.Layout();
+                Require(f.Search.Visible.Count == 2 && f.Search.Counter.Text == "2 / 7",
+                    "Update filtering waited on or failed with unrelated content inspection.");
+                f.Search.SearchBox.Text = "*Enhancements*"; f.Layout();
+                Require(f.Search.Visible.Single() == f.Enhancements, "Update marks and name search were not combined.");
+                f.Rows().Single().ContextMenu.Items.OfType<MenuItem>().First().Command.Execute(null);
+                Require(f.Enhancements.IsChecked && !anchor.IsChecked && f.State.NativeAllCalls == 0,
+                    "Updated name-search selection changed a hidden item.");
+                f.Search.SearchBox.Text = "3832319500"; f.Layout();
+                Require(f.Search.Visible.Single() == f.Enhancements, "Workshop ID search did not combine with updates.");
+                f.Click(f.Search.ClearButton); f.Layout();
+                Require(f.Search.KindBox.SelectedIndex == updatedIndex && f.Search.Visible.Count == 2,
+                    "Clearing text lost the updated choice or consumed a mark.");
+                f.Search.KindBox.SelectedIndex = 0; f.Layout();
+                f.Search.KindBox.SelectedIndex = updatedIndex; f.Layout(); f.Search.Refresh(); f.Layout();
+                Require(f.Search.Visible.SequenceEqual(new[] { anchor, f.Enhancements }) &&
+                    f.State.Directories.SequenceEqual(original) && f.Updated.Count == 3,
+                    "Switching or refreshing filters consumed marks or reordered the source.");
+            });
             test("filtered native bulk actions keep captions and affect visible enabled MODs only", () =>
             {
                 using var f = new Fixture(); f.Search.SearchBox.Text = "*F-*"; f.Layout();
@@ -114,6 +149,7 @@ internal static class SearchUiTests
         internal readonly ItemsControl List;
         internal readonly ScrollViewer Scroll;
         internal readonly State State = new();
+        internal readonly HashSet<SearchDirectory> Updated = new();
         internal readonly SearchDirectory Enhancements, Mission, OtherMission, F15, F2, Original;
         internal readonly ModContentInventory Inventory;
         internal ModListSearch Search;
@@ -153,7 +189,8 @@ internal static class SearchUiTests
         }
         internal ModListSearch CreateSearch()
         {
-            var result = new ModListSearch(Host, List, State.Directories, State.SelectAllCommand, State.SelectNoneCommand, new ModText("ja"), () => { });
+            var result = new ModListSearch(Host, List, State.Directories, State.SelectAllCommand, State.SelectNoneCommand,
+                new ModText("ja"), () => { }, source => source.IsSteam && Updated.Contains(source));
             result.SetInventory(Inventory, null); return result;
         }
         private SearchDirectory Item(string name, string folder, bool active, bool steam = false, ulong id = 0, bool editable = true)

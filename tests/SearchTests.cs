@@ -44,6 +44,19 @@ internal static class SearchTests
             Require(!new ModListFilter(" ", ModContent.None).IsActive && new ModListFilter("", ModContent.Dll).IsActive,
                 "Filter activity did not follow the actual search and kind conditions.");
         });
+        test("updated-only filtering combines with names and Workshop IDs and remains an active selection scope", () =>
+        {
+            var filter = new ModListFilter("", ModContent.None, updatedOnly: true);
+            Require(filter.IsActive && filter.Matches("Example", "123", ModContent.None, updated: true) &&
+                !filter.Matches("Example", "123", ModContent.Dll, updated: false),
+                "The update filter depended on a query or content type, or included an unmarked item.");
+            Require(new ModListFilter("ship", ModContent.None, true).Matches("Warship Pack", "123", ModContent.None, true) &&
+                !new ModListFilter("ship?", ModContent.None, true).Matches("Warship Pack", "123", ModContent.None, true) &&
+                new ModListFilter("*ship*", ModContent.None, true).Matches("Warship Pack", "123", ModContent.None, true) &&
+                new ModListFilter("3832319500", ModContent.None, true).Matches("Other", "3832319500", ModContent.None, true) &&
+                !new ModListFilter("ship", ModContent.None, true).Matches("Other", "123", ModContent.None, true),
+                "Update filtering broke partial/wildcard/ID searches or combined the conditions with OR.");
+        });
         test("content inspection identifies mixed disabled MODs without parsing or locking files", () =>
         {
             using var f = new Program.Fixture(); var source = f.Source("Mixed", false);
