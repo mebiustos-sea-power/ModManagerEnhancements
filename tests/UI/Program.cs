@@ -308,6 +308,7 @@ internal static class Program
                 SyncUiTests.Run(Test);
                 LocalizationUiTests.Run(Test);
                 ControllerUiTests.Run(Test);
+                SortUiTests.Run(Test);
                 WorkshopUpdateTests.Run(Test);
                 MainMenuUpdateTests.Run(Test);
                 Console.WriteLine($"Passed {passed} native UI checks without launching or attaching to Sea Power.");

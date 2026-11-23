@@ -33,6 +33,9 @@ internal sealed class ModText
     internal string Sync => Get("Sync");
     internal string SyncTitle => Get("SyncTitle");
     internal string SyncConfirmation => Get("SyncConfirmation");
+    internal string SortDependencies => Get("SortDependencies");
+    internal string EnabledFirst => Get("EnabledFirst");
+    internal string EnabledFirstTooltip => Get("EnabledFirstTooltip");
     internal string Change => Get("Change");
     internal string Close => Get("Close");
     internal string LocalTooltip => Get("LocalTooltip");

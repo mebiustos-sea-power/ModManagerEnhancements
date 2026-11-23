@@ -1,5 +1,8 @@
 {
   "ModManagerEnhancements": {
+    "SortDependencies": "依存関係で並べ替え",
+    "EnabledFirst": "有効なMODを上にまとめる",
+    "EnabledFirstTooltip": "有効・無効それぞれの中で、現在の順序を維持します。",
     "SearchPlaceholder": "MOD名を検索",
     "ClearSearch": "検索文字を消す",
     "NoMatchingMods": "該当するMODはありません。",

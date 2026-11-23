@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Windows.Input;
@@ -51,6 +52,12 @@ internal static class ControllerUiTests
             replacement.Replace(confirmation);
             Field("syncCommand").SetValue(controller, replacement);
             Field("syncConfirmation").SetValue(controller, confirmation);
+            int sortExecutions = 0;
+            var nativeSort = new DelegateCommand(_ => sortExecutions++);
+            var sortButton = new Button { Command = nativeSort };
+            using var sortMenu = new ModSortMenu(sortButton, nativeSort, () => directories, text, Plugin.Error);
+            var staleSort = sortButton.ContextMenu.Items.OfType<MenuItem>().Last().Command;
+            Field("sortMenu").SetValue(controller, sortMenu);
             using var scan = new ScanSession<ConflictReport>((_, __) => throw new InvalidOperationException("No scan should run in this test."), Plugin.Error);
             using var content = new ScanSession<ModContentInventory>((_, __) => throw new InvalidOperationException("No scan should run in this test."), Plugin.Error);
             Field("session").SetValue(controller, scan);
@@ -73,6 +80,9 @@ internal static class ControllerUiTests
                 Require(ReferenceEquals(model.SyncDependenciesCommand, command) && open.Count == 0,
                     "Error teardown did not restore the native command and close its pending confirmation.");
                 dialog!.AcknowledgeCommand.Execute(null);
+                staleSort.Execute(null);
+                Require(!staleSort.CanExecute(null) && ReferenceEquals(sortButton.Command, nativeSort) && sortExecutions == 0,
+                    "Error teardown retained the sort menu or allowed a stale sort action.");
                 Require(command.Executions == 0, "Acknowledging a stale dialog executed synchronization after teardown.");
                 Require(Disposed(() => scan.Request(Array.Empty<ModSource>())) && Disposed(() => content.Request(Array.Empty<ModSource>())),
                     "Error teardown left a scan session active.");

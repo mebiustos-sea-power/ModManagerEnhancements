@@ -1,5 +1,8 @@
 {
   "ModManagerEnhancements": {
+    "SortDependencies": "Sort by dependencies",
+    "EnabledFirst": "Group enabled mods at the top",
+    "EnabledFirstTooltip": "Preserve the current order within the enabled and disabled groups.",
     "SearchPlaceholder": "Search mods",
     "ClearSearch": "Clear search",
     "NoMatchingMods": "No matching mods.",

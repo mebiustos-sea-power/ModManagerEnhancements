@@ -6,6 +6,8 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 
 ## Features
 
+- Click **Sort ▼** to choose dependency sorting or **Group enabled mods at the top**. The latter preserves the current order within both mod groups and includes mods hidden by search or filters. **Base Game** always stays at the bottom. Opening or dismissing the menu does not sort; choosing an action executes it immediately. Use the game's **Confirm** button to save and apply the order.
+
 - Asks for confirmation before **Sync** or **Download dependencies** starts. Synchronization checks all enabled Workshop mods, subscribes to and downloads missing dependencies, and enables disabled dependencies. Unsaved mod selections or load order may be reset.
 - Searches mod names and Workshop IDs. Plain text is a case-insensitive partial search; patterns containing `*` or `?` match the whole name or ID. `*` matches zero or more characters and `?` matches one. For example, `ship` finds `WarshipA Pack`, while `ship?` matches `ShipA`; use `*ship*` to find names containing `ship` with a wildcard. Folder names are not searched.
 - Filters the list by missions, campaigns, unit/weapon data, or DLL presence. A mod can match several content types. Types are inferred from installed file paths, including disabled mods, without opening their contents. Clearing the search text keeps the type selection.

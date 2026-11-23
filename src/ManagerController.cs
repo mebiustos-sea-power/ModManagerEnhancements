@@ -29,6 +29,7 @@ internal sealed class ManagerController
     private CompatibilityActions? compatibilityActions;
     private SyncConfirmation? syncConfirmation;
     private NativeSyncCommand? syncCommand;
+    private ModSortMenu? sortMenu;
     private WorkshopUpdates? workshopUpdates;
     private Button? all, refresh;
     private TrulyObservableCollection<SearchDirectory>? directories;
@@ -91,6 +92,8 @@ internal sealed class ManagerController
                 message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
                 message => WindowHostCommands.CloseWindowCommand.CanExecute(message.Model, view), Plugin.Error);
             syncCommand.Replace(syncConfirmation);
+            sortMenu = new ModSortMenu(FindSortButton(left), model.SortByDependenciesCommand,
+                () => model.Directories, text, Plugin.Error);
             compatibilityActions = new CompatibilityActions(Application.version, text, ShowDialog,
                 message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
                 message => WindowHostCommands.CloseWindowCommand.CanExecute(message.Model, view),
@@ -259,6 +262,17 @@ internal sealed class ManagerController
         return candidates.SingleOrDefault() ?? throw new InvalidOperationException("The native MOD list binding is unavailable.");
     }
 
+    private static Button FindSortButton(DependencyObject left)
+    {
+        var candidates = new List<Button>();
+        Visit(left, node =>
+        {
+            if (node is Button button && BindingOperations.GetBinding(button, Button.CommandProperty)?.Path?.Path
+                == nameof(ModMenuViewModel.SortByDependenciesCommand)) candidates.Add(button);
+        });
+        return candidates.SingleOrDefault() ?? throw new InvalidOperationException("The native MOD sort button is unavailable.");
+    }
+
     private static void Visit(DependencyObject node, Action<DependencyObject> action)
     {
         action(node);
@@ -280,6 +294,7 @@ internal sealed class ManagerController
         mounted = false;
         syncConfirmation?.Dispose(); syncConfirmation = null;
         syncCommand?.Dispose(); syncCommand = null;
+        sortMenu?.Dispose(); sortMenu = null;
         rowRefresh?.Dispose(); rowRefresh = null;
         workshopUpdates = null;
         session?.Dispose(); session = null;

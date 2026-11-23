@@ -350,6 +350,7 @@ internal static class Program
                 catch (ObjectDisposedException) { }
             });
             LocalizationTests.Run(Test);
+            ModOrderTests.Run(Test);
             Console.WriteLine($"Passed {passed} functional checks."); return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }

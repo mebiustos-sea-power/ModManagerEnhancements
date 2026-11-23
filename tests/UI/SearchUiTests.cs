@@ -28,6 +28,29 @@ internal static class SearchUiTests
         </ResourceDictionary>"));
         try
         {
+            test("enabled grouping reorders the full native source while search keeps its filter and original rows", () =>
+            {
+                using var f = new Fixture();
+                // The controller refreshes the projection when the native collection reports an order change.
+                f.State.Directories.CollectionChanged += (_, __) => f.Search.Refresh();
+                f.Search.SearchBox.Text = "*i*"; f.Layout();
+                var before = f.State.Directories.ToArray();
+                var flags = before.Select(item => item.IsChecked).ToArray();
+                Require(f.Search.Visible.Count < before.Length, "The fixture must hide mods before grouping.");
+                var button = (Button)typeof(ManagerController).GetMethod("FindSortButton", BindingFlags.Static | BindingFlags.NonPublic)!
+                    .Invoke(null, new object[] { f.Host })!;
+                using var sort = new ModSortMenu(button, f.State.SortByDependenciesCommand,
+                    () => f.State.Directories, TestText.Create("ja"), error => throw error);
+                var expected = new[] { before[0], f.Enhancements, f.Mission, f.F15, f.OtherMission, f.F2, f.Original };
+                f.Click(button); f.Layout();
+                button.ContextMenu.Items.OfType<MenuItem>().Last().Command.Execute(null); f.Layout();
+                Require(f.State.Directories.SequenceEqual(expected) && before.Select(item => item.IsChecked).SequenceEqual(flags),
+                    "Grouping changed only visible mods, replaced objects, or changed checkbox states.");
+                Require(f.Search.SearchBox.Text == "*i*" && f.Search.Visible.SequenceEqual(expected.Where(item =>
+                    item.Name.IndexOf("i", StringComparison.OrdinalIgnoreCase) >= 0)) &&
+                    f.List.Items.Cast<SearchDirectory>().SequenceEqual(f.Search.Visible),
+                    "The reordered projection lost the search or failed to follow the full source order.");
+            });
             test("acknowledged Workshop updates remain filterable after the manager is reopened", () =>
             {
                 using var f = new Fixture();
@@ -254,7 +277,7 @@ internal static class SearchUiTests
             Enhancements = Item("Mod Manager Enhancements", "enhancements", true, true, 3832319500);
             Mission = Item("Mission 1985", "mission", true); OtherMission = Item("Other Mission", "other", false);
             F15 = Item("F-15J Peace Eagle", "FindMeFolder", true); F2 = Item("F-2A 'Viper Zero'", "f2", false);
-            Original = Item("Original", "original", true, false, 0, false);
+            Original = Item("Original", "original", true, false, 0, false, LayerKind.Base);
             foreach (var item in new[] { anchor, Enhancements, Mission, OtherMission, F15, F2, Original }) State.Directories.Add(item);
             Inventory = new ModContentInventory(new Dictionary<string, ModContent>
             {
@@ -278,7 +301,7 @@ internal static class SearchUiTests
                     </Grid>
                     </Border>
                   </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-                </ScrollViewer><Button Grid.Row='2' Content='Sort'/><TextBlock Grid.Row='3'/>
+                </ScrollViewer><Button Grid.Row='2' Content='Sort' Command='{Binding SortByDependenciesCommand}'/><TextBlock Grid.Row='3'/>
               </Grid></UserControl>");
             Root.DataContext = State; Host = (Grid)Root.FindName("NativeHost"); List = (ItemsControl)Root.FindName("NativeList"); Scroll = (ScrollViewer)Root.FindName("NativeScroll");
             view = GUI.CreateView(Root); view.SetSize(800, 600); view.Update(time += 0.1);
@@ -290,13 +313,14 @@ internal static class SearchUiTests
                 TestText.Create("ja"), changed ?? (() => { }), updated ?? (source => source.IsSteam && Updated.Contains(source)));
             result.SetInventory(Inventory, null); return result;
         }
-        private SearchDirectory Item(string name, string folder, bool active, bool steam = false, ulong id = 0, bool editable = true)
+        private SearchDirectory Item(string name, string folder, bool active, bool steam = false, ulong id = 0, bool editable = true, LayerKind kind = LayerKind.Mod)
         {
 #pragma warning disable SYSLIB0050
             var item = (SearchDirectory)FormatterServices.GetUninitializedObject(typeof(SearchDirectory));
 #pragma warning restore SYSLIB0050
             typeof(SearchDirectory).GetField("_directoryInfo", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(item, new DirectoryInfo(Path.Combine(prefix, folder)));
             typeof(SearchDirectory).GetField("<IsSteam>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(item, steam);
+            typeof(SearchDirectory).GetField("<Kind>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(item, kind);
             item.Name = name; item.IsEnabled = editable; item.IsChecked = active; item.steamId = new Steamworks.PublishedFileId_t(id); return item;
         }
         internal Grid[] Rows()
@@ -328,6 +352,7 @@ internal static class SearchUiTests
         public TrulyObservableCollection<SearchDirectory> Directories { get; } = new();
         public ICommand SelectAllCommand { get; }
         public ICommand SelectNoneCommand { get; }
+        public ICommand SortByDependenciesCommand { get; } = new ActionCommand(() => { });
         public int NativeAllCalls { get; private set; }
         public int NativeNoneCalls { get; private set; }
         private string allCaption = "すべて選択";
