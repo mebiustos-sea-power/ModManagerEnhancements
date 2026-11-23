@@ -27,6 +27,8 @@ internal sealed class ManagerController
     private ModListSearch? listSearch;
     private RowRefresh? rowRefresh;
     private CompatibilityActions? compatibilityActions;
+    private SyncConfirmation? syncConfirmation;
+    private NativeSyncCommand? syncCommand;
     private WorkshopUpdates? workshopUpdates;
     private Button? all, refresh;
     private TrulyObservableCollection<SearchDirectory>? directories;
@@ -83,7 +85,12 @@ internal sealed class ManagerController
             listSearch = new ModListSearch(left, FindDirectoryList(left), model.Directories,
                 model.SelectAllCommand, model.SelectNoneCommand, text, RequestRows,
                 source => workshopUpdates?.Changed(source) == true);
-            compatibilityActions = new CompatibilityActions(Application.version, text, ShowCompatibilityDialog,
+            syncCommand = new NativeSyncCommand(model);
+            syncConfirmation = new SyncConfirmation(syncCommand.Original, text, ShowDialog,
+                message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
+                message => WindowHostCommands.CloseWindowCommand.CanExecute(message.Model, view), Plugin.Error);
+            syncCommand.Replace(syncConfirmation);
+            compatibilityActions = new CompatibilityActions(Application.version, text, ShowDialog,
                 message => WindowHostCommands.CloseWindowCommand.Execute(message.Model, view),
                 message => WindowHostCommands.CloseWindowCommand.CanExecute(message.Model, view),
                 (source, restoring) =>
@@ -188,7 +195,7 @@ internal sealed class ManagerController
     private void Open(SearchDirectory source)
     { filter.Toggle(source.DirectoryInfo.FullName, source.Name); Render(); }
 
-    private void ShowCompatibilityDialog(NativeMessageBox message)
+    private void ShowDialog(NativeMessageBox message)
     {
         if (!WindowHostCommands.OpenWindowCommand.CanExecute(message.Model, view))
             throw new InvalidOperationException("The mod manager cannot display the confirmation dialog.");
@@ -271,6 +278,8 @@ internal sealed class ManagerController
     {
         if (ReferenceEquals(Plugin.Active, this)) Plugin.Active = null;
         mounted = false;
+        syncConfirmation?.Dispose(); syncConfirmation = null;
+        syncCommand?.Dispose(); syncCommand = null;
         rowRefresh?.Dispose(); rowRefresh = null;
         workshopUpdates = null;
         session?.Dispose(); session = null;

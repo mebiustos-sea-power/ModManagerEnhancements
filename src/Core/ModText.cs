@@ -42,6 +42,11 @@ internal sealed class ModText
         : $"Restore {name}'s supported version to the setting saved before MME changed it.";
     internal string CompatibilityFailure(string reason) => ja ? "変更処理に失敗しました。\n" + reason : "The change could not be completed.\n" + reason;
     internal string Cancel => ja ? "キャンセル" : "Cancel";
+    internal string Sync => ja ? "同期" : "Sync";
+    internal string SyncTitle => ja ? "MODの同期" : "Sync mods";
+    internal string SyncConfirmation => ja
+        ? "有効なWorkshop MODすべての依存関係を確認し、不足する依存MODを購読・ダウンロードし、無効な依存MODを有効化します。\n\n未確定のON/OFFや並び順が元に戻る場合があります。\n\n同期を実行しますか？"
+        : "Check dependencies for all enabled Workshop mods, subscribe to and download missing dependencies, and enable disabled dependencies.\n\nUnsaved changes to mod selections or load order may be reset.\n\nStart synchronization?";
     internal string Change => ja ? "変更" : "Change";
     internal string Close => ja ? "閉じる" : "Close";
     internal string LocalTooltip => ja ? "ローカルMOD" : "Local mod";

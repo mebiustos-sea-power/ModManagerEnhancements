@@ -6,6 +6,7 @@ Adds search, content filters, DLL indicators, and file-override details to Sea P
 
 ## Features
 
+- Asks for confirmation before **Sync** or **Download dependencies** starts. Synchronization checks all enabled Workshop mods, subscribes to and downloads missing dependencies, and enables disabled dependencies. Unsaved mod selections or load order may be reset.
 - Searches mod names and Workshop IDs. Plain text is a case-insensitive partial search; patterns containing `*` or `?` match the whole name or ID. `*` matches zero or more characters and `?` matches one. For example, `ship` finds `WarshipA Pack`, while `ship?` matches `ShipA`; use `*ship*` to find names containing `ship` with a wildcard. Folder names are not searched.
 - Filters the list by missions, campaigns, unit/weapon data, or DLL presence. A mod can match several content types. Types are inferred from installed file paths, including disabled mods, without opening their contents. Clearing the search text keeps the type selection.
 - While the list is filtered, the native **Select all** and **Select none** actions affect only visible, editable mods. Their captions stay unchanged. Search affects the displayed list, while file-override analysis still includes all enabled mods.
