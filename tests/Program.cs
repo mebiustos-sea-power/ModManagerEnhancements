@@ -152,7 +152,7 @@ internal static class Program
                         "The display limit must not truncate the real counts.");
                     foreach (string language in new[] { "ja", "en" })
                     {
-                        var text = new ModText(language);
+                        var text = TestText.Create(language);
                         Require(text.Tooltip(winner.Impact, false).Contains(count.ToString())
                             && text.Tooltip(lower.Impact, false).Contains(count.ToString())
                             && new DetailsModel(text, report, own.Id, own.Name, null).Files.Count == count,
@@ -188,7 +188,7 @@ internal static class Program
                 f.Write(a, "shared.png", "same"); f.Write(b, "shared.png", "same"); f.Write(c, "shared.png", "different");
                 f.Write(b, "another.png", "b"); f.Write(d, "another.png", "d");
                 var report = Scan(a, b, c, d);
-                var details = new DetailsModel(new ModText("en"), report, b.Id, b.Name, null);
+                var details = new DetailsModel(TestText.Create("en"), report, b.Id, b.Name, null);
                 Require(details.Files.Count == 2 && details.Files.Any(file => file.Path == "shared.png"),
                     "A provider matching the preferred contents must still expose its shared file in the details.");
                 var selected = new BadgeModel(report, b.Id, b.Id);
@@ -267,13 +267,13 @@ internal static class Program
                 using var f = new Fixture(); var a = f.Source("A"); var b = f.Source("B"); var c = f.Source("C");
                 f.Write(a, "language/names.ini", "a"); f.Write(b, "language/names.ini", "b"); f.Write(b, "ui/b.png", "b"); f.Write(c, "ui/b.png", "c");
                 var report = Scan(a, b, c);
-                var model = new DetailsModel(new ModText("ja"), report, a.Id, a.Name, null);
+                var model = new DetailsModel(TestText.Create("ja"), report, a.Id, a.Name, null);
                 Require(model.Files.Count == 1 && model.Files[0].Path == "language/names.ini" && model.Files[0].Note.Length > 0, "Selected-mod details or INI qualification missing.");
                 Require(model.Files[0].Locations.Contains(Path.Combine(a.Directory, "language", "names.ini")), "Source path unavailable for inspection.");
                 Require(model.IsFiltered && model.Selection.Contains(a.Name), "Filtered view did not identify its scope or expose the reset action.");
                 foreach (string language in new[] { "ja", "en" })
                 {
-                    var text = new ModText(language); var filter = new ModFilter();
+                    var text = TestText.Create(language); var filter = new ModFilter();
                     var all = new DetailsModel(text, report, filter.Id, filter.Name, null);
                     Require(!all.IsFiltered && all.Selection.Length == 0 && all.Files.Count == 2,
                         "Full view must show every file without a redundant scope label or reset action.");
@@ -349,6 +349,7 @@ internal static class Program
                 try { session.Request(Array.Empty<ModSource>()); throw new Exception("Disposed session accepted work."); }
                 catch (ObjectDisposedException) { }
             });
+            LocalizationTests.Run(Test);
             Console.WriteLine($"Passed {passed} functional checks."); return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }

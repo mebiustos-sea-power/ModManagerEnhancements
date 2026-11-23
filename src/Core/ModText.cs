@@ -1,68 +1,63 @@
 using System;
+using System.Globalization;
 
 namespace ModManagerEnhancements.Core;
 
 internal sealed class ModText
 {
-    private readonly bool ja;
-    internal ModText(string language) { ja = language.StartsWith("ja", StringComparison.OrdinalIgnoreCase); }
-    internal string SearchPlaceholder => ja ? "MOD名を検索" : "Search mods";
-    internal string ClearSearch => ja ? "検索文字を消す" : "Clear search";
-    internal string NoMatchingMods => ja ? "該当するMODはありません。" : "No matching mods.";
-    internal string KindScanning => ja ? "種類を確認中…" : "Scanning types…";
-    internal string KindFailed => ja ? "種類の確認に失敗しました。" : "Type scan failed.";
-    internal string KindName(ModContent kind) => kind switch
+    internal const string Section = "ModManagerEnhancements";
+    private readonly Func<string, string> lookup;
+    internal ModText(Func<string, string> lookup) { this.lookup = lookup ?? throw new ArgumentNullException(nameof(lookup)); }
+    private string Get(string key) => lookup(key);
+    private string Format(string key, params object[] values) => string.Format(CultureInfo.CurrentCulture, Get(key), values);
+    internal string SearchPlaceholder => Get("SearchPlaceholder");
+    internal string ClearSearch => Get("ClearSearch");
+    internal string NoMatchingMods => Get("NoMatchingMods");
+    internal string KindScanning => Get("KindScanning");
+    internal string KindFailed => Get("KindFailed");
+    internal string Header => Get("Header");
+    internal string Help => Get("Help");
+    internal string IniNote => Get("IniNote");
+    internal string Scanning => Get("Scanning");
+    internal string ShowAll => Get("ShowAll");
+    internal string DllTooltip => Get("DllTooltip");
+    internal string CompatibilityTooltip => Get("CompatibilityTooltip");
+    internal string WorkshopUpdatedTooltip => Get("WorkshopUpdatedTooltip");
+    internal string UpdatedFilter => Get("UpdatedFilter");
+    internal string SetCompatibility => Get("SetCompatibility");
+    internal string RestoreCompatibility => Get("RestoreCompatibility");
+    internal string RestoreButton => Get("RestoreButton");
+    internal string CompatibilityModifiedTooltip => Get("CompatibilityModifiedTooltip");
+    internal string CompatibilityTitle => Get("CompatibilityTitle");
+    internal string Cancel => Get("Cancel");
+    internal string Sync => Get("Sync");
+    internal string SyncTitle => Get("SyncTitle");
+    internal string SyncConfirmation => Get("SyncConfirmation");
+    internal string Change => Get("Change");
+    internal string Close => Get("Close");
+    internal string LocalTooltip => Get("LocalTooltip");
+    internal string WorkshopTooltip => Get("WorkshopTooltip");
+    internal string Refresh => Get("Refresh");
+    internal string Local => Get("Local");
+    internal string Workshop => Get("Workshop");
+    internal string Preferred => Get("Preferred");
+    internal string Lower => Get("Lower");
+    internal string Identical => Get("Identical");
+    internal string Failed => Get("Failed");
+    internal string Empty => Get("Empty");
+    internal string KindName(ModContent kind) => Get(kind switch
     {
-        ModContent.Missions => ja ? "ミッション" : "Missions",
-        ModContent.Campaigns => ja ? "キャンペーン" : "Campaigns",
-        ModContent.Units => ja ? "ユニット" : "Units",
-        ModContent.Dll => "DLL",
-        _ => ja ? "すべて" : "All"
-    };
-    internal string Header => ja ? "上書き詳細" : "File overrides";
-    internal string Help => ja ? "↑ 優先されるファイル　↓ 上位MODと内容が異なるファイル。\n左の↑／↓でMODを絞り込み、選択中の枠付きマークを再クリックで解除します。" : "↑ Files with priority   ↓ Files differing from a higher-priority mod.\nClick a mod’s ↑/↓ to filter; click the selected outlined badge again to clear.";
-    internal string IniNote => ja ? "INIは読み込み方法によりキー単位で統合されます。この表示はファイル候補の優先順位です。" : "INI files may be merged by key depending on how they are loaded. This shows file-provider priority.";
-    internal string Scanning => ja ? "ファイルを確認しています…" : "Scanning files…";
-    internal string ShowAll => ja ? "全件表示に戻す" : "Show all overrides";
-    internal string FilteredSelection(string name) => ja ? "表示対象：" + name : "Filtered by: " + name;
-    internal string DllTooltip => ja ? "DLLファイルを含むMODです。" : "This mod contains DLL files.";
-    internal string CompatibilityTooltip => ja ? "バージョン範囲外" : "Game version out of range";
-    internal string WorkshopUpdatedTooltip => ja ? "前回から更新あり" : "Updated since last visit";
-    internal string UpdatedFilter => ja ? "更新あり" : "Updated";
-    internal string SetCompatibility => ja ? "対応バージョンを現在のゲーム版に変更" : "Set supported version to current game version";
-    internal string RestoreCompatibility => ja ? "対応バージョンを元に戻す" : "Restore supported version";
-    internal string RestoreButton => ja ? "元に戻す" : "Restore";
-    internal string CompatibilityModifiedTooltip => ja ? "MMEで対応バージョンを変更済み" : "Supported version changed by MME";
-    internal string CompatibilityTitle => ja ? "対応バージョンの変更" : "Change supported version";
-    internal string CompatibilityConfirmation(string name, string version) => ja
-        ? $"「{name}」の_info.iniを書き換え、対応バージョンを\n現在のSea Power（{version}）に変更します。\n\n動作保証はできません。\n変更後は右クリックの「対応バージョンを元に戻す」で復元できます。"
-        : $"Update {name}'s _info.ini to set its supported version\nto the current Sea Power version ({version}).\n\nThis does not guarantee the mod will work.\nAfter changing it, use “Restore supported version” from the right-click menu to undo.";
-    internal string CompatibilityRestoreConfirmation(string name) => ja
-        ? $"「{name}」の対応バージョンを、MMEで変更する前の設定に戻します。"
-        : $"Restore {name}'s supported version to the setting saved before MME changed it.";
-    internal string CompatibilityFailure(string reason) => ja ? "変更処理に失敗しました。\n" + reason : "The change could not be completed.\n" + reason;
-    internal string Cancel => ja ? "キャンセル" : "Cancel";
-    internal string Sync => ja ? "同期" : "Sync";
-    internal string SyncTitle => ja ? "MODの同期" : "Sync mods";
-    internal string SyncConfirmation => ja
-        ? "有効なWorkshop MODすべての依存関係を確認し、不足する依存MODを購読・ダウンロードし、無効な依存MODを有効化します。\n\n未確定のON/OFFや並び順が元に戻る場合があります。\n\n同期を実行しますか？"
-        : "Check dependencies for all enabled Workshop mods, subscribe to and download missing dependencies, and enable disabled dependencies.\n\nUnsaved changes to mod selections or load order may be reset.\n\nStart synchronization?";
-    internal string Change => ja ? "変更" : "Change";
-    internal string Close => ja ? "閉じる" : "Close";
-    internal string LocalTooltip => ja ? "ローカルMOD" : "Local mod";
-    internal string WorkshopTooltip => ja ? "Steamワークショップ" : "Steam Workshop";
-    internal string Refresh => ja ? "再スキャン" : "Rescan";
-    internal string Local => ja ? "ローカル" : "Local";
-    internal string Workshop => ja ? "ワークショップ" : "Workshop";
-    internal string Preferred => ja ? "優先" : "Preferred";
-    internal string Lower => ja ? "下位" : "Lower priority";
-    internal string Identical => ja ? "優先ファイルと同じ内容" : "Same contents as preferred file";
-    internal string Failed => ja ? "確認に失敗しました。原因を解消して再スキャンしてください。" : "Scan failed. Resolve the cause and rescan.";
-    internal string Summary(int count) => ja ? $"内容が異なる重複ファイル: {count}件" : $"Overlapping files with different contents: {count}";
-    internal string Empty => ja ? "この範囲に、内容が異なる重複ファイルはありません。" : "No files with differing contents overlap in this selection.";
-    internal string Tooltip(ModImpact impact, bool selected) => ja
-        ? $"優先されるファイル: {impact.Preferred}件\n上位MODと内容が異なるファイル: {impact.Overridden}件\n" +
-            (selected ? "もう一度クリックして絞り込みを解除" : "クリックして、このMODの上書き詳細に絞り込み")
-        : $"Files with priority: {impact.Preferred}\nFiles differing from a higher-priority mod: {impact.Overridden}\n" +
-            (selected ? "Click again to show all overrides" : "Click to show only this mod’s file overrides");
+        ModContent.Missions => "KindMissions",
+        ModContent.Campaigns => "KindCampaigns",
+        ModContent.Units => "KindUnits",
+        ModContent.Dll => "KindDll",
+        _ => "KindAll"
+    });
+    internal string FilteredSelection(string name) => Format("FilteredSelection", name);
+    internal string CompatibilityConfirmation(string name, string version) => Format("CompatibilityConfirmation", name, version);
+    internal string CompatibilityRestoreConfirmation(string name) => Format("CompatibilityRestoreConfirmation", name);
+    internal string CompatibilityFailure(string reason) => Format("CompatibilityFailure", reason);
+    internal string Summary(int count) => Format("Summary", count);
+    internal string Tooltip(ModImpact impact, bool selected) => Format("Tooltip", impact.Preferred, impact.Overridden,
+        Get(selected ? "ClearFilterAction" : "FilterOverridesAction"));
 }

@@ -37,7 +37,7 @@ internal sealed class ManagerController
     private ModContentInventory? content;
     private Exception? contentFailure;
     private ConflictReport? report;
-    private ModText text = new("en");
+    private ModText text = GameText.Create();
     private Exception? failure;
     private readonly ModFilter filter = new();
     private bool mounted, dirty, contentDirty;
@@ -56,12 +56,13 @@ internal sealed class ManagerController
 
     private void Mount()
     {
-        if (mounted) return;
+        // Disabled mods do not contribute language files to the new scene's dictionary.
+        if (mounted || !Plugin.IsEnabled) return;
         try
         {
             page = view.Content as MenuPage ?? throw new InvalidOperationException("The mod manager no longer contains a MenuPage.");
             var model = view.DataContext as ModMenuViewModel ?? throw new InvalidOperationException("The mod manager's view model is unavailable.");
-            text = new ModText(LanguageResourceHandler.Instance.Language);
+            text = GameText.Create();
             workshopUpdates = Plugin.Updates;
             originalRightPane = page.RightPane;
             if (!(originalRightPane is UIElement original)) throw new InvalidOperationException("The mod manager's right pane is not a UI element.");
@@ -270,7 +271,6 @@ internal sealed class ManagerController
     internal void Fail(Exception error)
     {
         Plugin.Error(error);
-        failure = error; report = null; Render();
         Unmount();
     }
 

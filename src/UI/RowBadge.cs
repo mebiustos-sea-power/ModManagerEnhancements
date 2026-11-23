@@ -54,7 +54,7 @@ internal sealed class RowBadge : IDisposable
         counts.Children.Add(preferred); Grid.SetColumn(overridden, 2); counts.Children.Add(overridden);
         selection = new Border { Child = counts, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2),
             Padding = new Thickness(2, 0, 2, 0), BorderBrush = transparent, Background = transparent };
-        dllLabel = new TextBlock { Text = "DLL", Foreground = new SolidColorBrush(Color.FromArgb(255, 148, 158, 166)) };
+        dllLabel = new TextBlock { Foreground = new SolidColorBrush(Color.FromArgb(255, 148, 158, 166)) };
         dllBadge = new Border { Name = "ModManagerEnhancementsDllBadge", Padding = new Thickness(2, 0, 2, 0),
             Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed,
             BorderThickness = new Thickness(0), Background = transparent, Child = dllLabel };
@@ -141,6 +141,7 @@ internal sealed class RowBadge : IDisposable
         column.Width = new GridLength(metrics.OverrideColumnWidth); button.Width = metrics.ButtonWidth;
         sourceIndicator!.Update(metrics, text, Source.IsSteam);
         dllLabel.FontSize = preferred.FontSize * 0.85f;
+        dllLabel.Text = text.KindName(ModContent.Dll);
         dllBadge.ToolTip = text.DllTooltip;
         dllBadge.Visibility = containsDll ? Visibility.Visible : Visibility.Collapsed;
         preferred.Text = model.PreferredText; overridden.Text = model.OverriddenText;

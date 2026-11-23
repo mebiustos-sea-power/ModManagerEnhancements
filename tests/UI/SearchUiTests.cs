@@ -146,7 +146,7 @@ internal static class SearchUiTests
                             badges.Add(pair.Key, badge);
                         }
                         badge.Update(new BadgeModel(null, pair.Value.DirectoryInfo.FullName, null),
-                            (f.Inventory.Kinds(pair.Value.DirectoryInfo.FullName) & ModContent.Dll) != 0, new ModText("ja"));
+                            (f.Inventory.Kinds(pair.Value.DirectoryInfo.FullName) & ModContent.Dll) != 0, TestText.Create("ja"));
                     }
                 }
                 using var refresh = new RowRefresh(f.Host, Decorate);
@@ -287,7 +287,7 @@ internal static class SearchUiTests
         internal ModListSearch CreateSearch(Action? changed = null, Func<SearchDirectory, bool>? updated = null)
         {
             var result = new ModListSearch(Host, List, State.Directories, State.SelectAllCommand, State.SelectNoneCommand,
-                new ModText("ja"), changed ?? (() => { }), updated ?? (source => source.IsSteam && Updated.Contains(source)));
+                TestText.Create("ja"), changed ?? (() => { }), updated ?? (source => source.IsSteam && Updated.Contains(source)));
             result.SetInventory(Inventory, null); return result;
         }
         private SearchDirectory Item(string name, string folder, bool active, bool steam = false, ulong id = 0, bool editable = true)

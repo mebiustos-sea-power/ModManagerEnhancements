@@ -50,7 +50,7 @@ internal static class Program
                                             f.Warning.Visibility = warning ? Visibility.Visible : Visibility.Collapsed;
                                             f.Anchor.Visibility = anchor ? Visibility.Visible : Visibility.Collapsed;
                                             f.SetOrigin(steam); f.State.SetLanguage(language);
-                                            f.Badge.Update(new BadgeModel(report, f.Id, null), true, new ModText(language)); f.Layout(width);
+                                            f.Badge.Update(new BadgeModel(report, f.Id, null), true, TestText.Create(language)); f.Layout(width);
                                             var dll = f.Bounds(f.Dll); var origin = f.Bounds(f.Origin); var arrows = f.Bounds(f.Arrows);
                                             var up = f.Bounds(f.Up); var down = f.Bounds(f.Down);
                                             var dllText = f.Bounds((TextBlock)f.Dll.Child);
@@ -95,23 +95,23 @@ internal static class Program
                                                 Require(Near(dllText.X - (a.X + a.Width), 10) && dll.X + dll.Width <= origin.X,
                                                     "The native A mark must keep its original spacing before DLL.");
                                             }
-                                            f.Badge.Update(new BadgeModel(null, f.Id, null), true, new ModText(language)); f.Layout(width);
+                                            f.Badge.Update(new BadgeModel(null, f.Id, null), true, TestText.Create(language)); f.Layout(width);
                                             Require(f.Arrows.Visibility == Visibility.Collapsed && Near(f.Bounds(f.Origin).X, origin.X),
                                                 "Rows without overrides must reserve the same column widths.");
                                         }
                         }
                     f.Source.IsChecked = false;
-                    f.Badge.Update(new BadgeModel(null, f.Id, null), true, new ModText("ja")); f.Layout(800);
+                    f.Badge.Update(new BadgeModel(null, f.Id, null), true, TestText.Create("ja")); f.Layout(800);
                     Require(f.Dll.Visibility == Visibility.Visible && f.Arrows.Visibility == Visibility.Collapsed,
                         "Disabled/conflict-free DLL sources must retain their independent indicator.");
-                    f.Badge.Update(new BadgeModel(f.Report, f.Id, null), false, new ModText("en")); f.Layout(800);
+                    f.Badge.Update(new BadgeModel(f.Report, f.Id, null), false, TestText.Create("en")); f.Layout(800);
                     Require(f.Dll.Visibility == Visibility.Collapsed && f.Arrows.Visibility == Visibility.Visible,
                         "Data-only sources lost their independent override control.");
                 });
                 Test("native Workshop commands, disabled Local tooltips and filter toggles remain usable", () =>
                 {
                     using var f = new Fixture();
-                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("en")); f.Layout(800);
+                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("en")); f.Layout(800);
                     var dll = (TextBlock)f.Dll.Child;
                     var dllColor = ((SolidColorBrush)dll.Foreground).Color;
                     var nameColor = ((SolidColorBrush)f.NameLabel.Foreground).Color;
@@ -125,15 +125,15 @@ internal static class Program
                     f.Click(f.Origin);
                     Require(f.NativeClicks == 1 && f.Filters == 0 && ReferenceEquals(f.Origin.Command, f.State.OpenSteamPageCommand),
                         "The Steam icon lost or replaced the native Workshop command.");
-                    f.SetOrigin(false); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("en")); f.Layout(800);
+                    f.SetOrigin(false); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("en")); f.Layout(800);
                     Require(f.HoverSourceCenter() > 0, "Hovering the empty folder center must request its tooltip while the local button stays disabled.");
                     f.Click(f.Origin);
                     Require(f.NativeClicks == 1 && f.Filters == 0 && !f.Origin.IsEnabled
                         && ToolTipService.GetShowOnDisabled(f.Origin) && (string)f.Origin.ToolTip == "Local mod",
                         "The native disabled Local indicator must retain a tooltip without executing a command.");
-                    f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja")); f.Layout(800);
+                    f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("ja")); f.Layout(800);
                     Require((string)f.Origin.ToolTip == "ローカルMOD", "The Local tooltip lost its localized source description.");
-                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja")); f.Layout(800);
+                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("ja")); f.Layout(800);
                     Require((string)f.Origin.ToolTip == "Steamワークショップ", "The Workshop tooltip lost its localized source description.");
                     f.Click(f.Check); Require(f.Check.IsChecked == true && f.Filters == 0, "The native enable checkbox was affected.");
                     f.Click(f.Arrows); f.Layout(800);
@@ -143,12 +143,12 @@ internal static class Program
                     Require(f.Filters == 2 && f.Filter.Id == null && Same(f.Up.Foreground, normalUp) && Same(f.Down.Foreground, normalDown)
                         && ((SolidColorBrush)selection.BorderBrush).Color.A == 0, "Clicking the selected badge again must clear its filter.");
                     f.Click(f.Arrows); Require(f.Filter.Id == f.Id, "The cleared badge could not be selected again.");
-                    f.Filter.Clear(); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja")); f.Layout(800);
+                    f.Filter.Clear(); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("ja")); f.Layout(800);
                     Require(Same(f.Up.Foreground, normalUp) && Same(f.Down.Foreground, normalDown), "Show all did not clear highlighting.");
                 });
                 Test("version warnings remain visible on disabled rows and preserve neighboring controls", () =>
                 {
-                    string tooltip = new ModText("ja").CompatibilityTooltip;
+                    string tooltip = TestText.Create("ja").CompatibilityTooltip;
                     using var baseline = new Fixture();
                     using var f = new Fixture(compatibilityWarning: tooltip);
                     f.SetOrigin(true);
@@ -164,8 +164,8 @@ internal static class Program
                         {
                             f.Source.IsChecked = enabled;
                             f.Check.IsChecked = enabled;
-                            f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja"));
-                            baseline.Badge.Update(new BadgeModel(baseline.Report, baseline.Id, null), true, new ModText("ja"));
+                            f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("ja"));
+                            baseline.Badge.Update(new BadgeModel(baseline.Report, baseline.Id, null), true, TestText.Create("ja"));
                             f.Layout(width);
                             baseline.Layout(width);
                             var mark = f.Bounds(warning);
@@ -199,12 +199,12 @@ internal static class Program
                 Test("changed-version pencils share the warning slot and remain passive", () =>
                 {
                     using var changed = new Fixture(compatibilityModified: true);
-                    using var warned = new Fixture(compatibilityWarning: new ModText("ja").CompatibilityTooltip, compatibilityModified: true);
+                    using var warned = new Fixture(compatibilityWarning: TestText.Create("ja").CompatibilityTooltip, compatibilityModified: true);
                     var pencil = changed.Row.Children.OfType<Border>().Single(b => b.Name == "ModManagerEnhancementsCompatibilityOverride");
                     foreach (string language in new[] { "ja", "en" })
                         foreach (int width in new[] { 480, 800 })
                         {
-                            var text = new ModText(language);
+                            var text = TestText.Create(language);
                             changed.SetOrigin(true); warned.SetOrigin(true);
                             changed.Anchor.Visibility = warned.Anchor.Visibility = Visibility.Visible;
                             changed.Badge.Update(new BadgeModel(changed.Report, changed.Id, null), true, text);
@@ -232,7 +232,7 @@ internal static class Program
                 {
                     foreach (string status in new[] { "none", "warning", "pencil" })
                     {
-                        string? warning = status == "warning" ? new ModText("ja").CompatibilityTooltip : null;
+                        string? warning = status == "warning" ? TestText.Create("ja").CompatibilityTooltip : null;
                         using var baseline = new Fixture(compatibilityWarning: warning, compatibilityModified: status == "pencil");
                         using var f = new Fixture(compatibilityWarning: warning, compatibilityModified: status == "pencil", workshopUpdated: true);
                         var dot = f.Row.Children.OfType<Border>().Single(b => b.Name == "ModManagerEnhancementsWorkshopUpdate");
@@ -242,7 +242,7 @@ internal static class Program
                         foreach (int width in new[] { 480, 800 })
                         foreach (bool enabled in new[] { false, true })
                         {
-                            var text = new ModText(language);
+                            var text = TestText.Create(language);
                             f.Check.IsChecked = enabled;
                             f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, text);
                             baseline.Badge.Update(new BadgeModel(baseline.Report, baseline.Id, null), true, text);
@@ -268,7 +268,7 @@ internal static class Program
                         }
                         f.Badge.Dispose();
                         f.Badge = new RowBadge(f.Row, f.Source, _ => f.Filters++, f.Metrics, warning, status == "pencil");
-                        f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja"));
+                        f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("ja"));
                         f.Layout(480);
                         Require(!f.Row.Children.OfType<Border>().Any(b => b.Name == "ModManagerEnhancementsWorkshopUpdate") &&
                             f.Row.ColumnDefinitions.Count == baseline.Row.ColumnDefinitions.Count,
@@ -278,7 +278,7 @@ internal static class Program
                 Test("detaching restores the native shared caption, source bindings and layout", () =>
                 {
                     using var f = new Fixture();
-                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("en")); f.Layout(800);
+                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("en")); f.Layout(800);
                     var bitmap = ((Image)f.Icon).Source;
                     var compactedNameWidth = f.NameLabel.ActualWidth;
                     f.Badge.Dispose(); f.State.SetLanguage("ja"); f.Layout(800);
@@ -293,19 +293,21 @@ internal static class Program
                     f.SetOrigin(false); f.Layout(800);
                     Require(!f.Origin.IsEnabled && f.Caption.Text == "ローカル", "The native IsSteam trigger stopped updating after detachment.");
                     f.Badge = new RowBadge(f.Row, f.Source, _ => f.Filters++, f.Metrics);
-                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, new ModText("ja")); f.Layout(800);
+                    f.SetOrigin(true); f.Badge.Update(new BadgeModel(f.Report, f.Id, null), true, TestText.Create("ja")); f.Layout(800);
                     Require(f.Row.Children.Count == f.Original.Count + 2 && ReferenceEquals(((Image)f.Icon).Source, bitmap),
                         "Recreation duplicated controls or reloaded the shared bitmap.");
                     f.Click(f.Origin); f.Click(f.Arrows);
                     Require(f.NativeClicks == 1 && f.Filters == 1, "Recreation lost or duplicated native/filter handlers.");
                     using var resource = new Fixture(resourceCaption: true);
-                    resource.SetOrigin(true); resource.Badge.Update(new BadgeModel(resource.Report, resource.Id, null), false, new ModText("en")); resource.Layout(800);
+                    resource.SetOrigin(true); resource.Badge.Update(new BadgeModel(resource.Report, resource.Id, null), false, TestText.Create("en")); resource.Layout(800);
                     resource.Badge.Dispose(); resource.Row.Resources["Caption"] = "Updated Workshop"; resource.Layout(800);
                     Require(resource.Caption.Text == "Updated Workshop", "The original caption's dynamic-resource reference was lost.");
                 });
                 SearchUiTests.Run(Test);
                 CompatibilityUiTests.Run(Test);
                 SyncUiTests.Run(Test);
+                LocalizationUiTests.Run(Test);
+                ControllerUiTests.Run(Test);
                 WorkshopUpdateTests.Run(Test);
                 MainMenuUpdateTests.Run(Test);
                 Console.WriteLine($"Passed {passed} native UI checks without launching or attaching to Sea Power.");
@@ -394,7 +396,7 @@ internal static class Program
         private void Select(SearchDirectory source)
         {
             Filters++; Filter.Toggle(source.DirectoryInfo.FullName, source.Name);
-            Badge.Update(new BadgeModel(Report, Id, Filter.Id), true, new ModText("en"));
+            Badge.Update(new BadgeModel(Report, Id, Filter.Id), true, TestText.Create("en"));
         }
         private void Add(UIElement child, int column) { Grid.SetColumn(child, column); Row.Children.Add(child); }
         internal void Layout(int width) { view.SetSize(width, 100); view.Update(time += 0.1); }
@@ -453,5 +455,15 @@ internal static class Program
 namespace ModManagerEnhancements
 {
     // The fixture exercises native Noesis controls without starting the game's plugin or logger.
-    internal static class Plugin { internal static void Guard(Action action) => action(); }
+    internal static class Plugin
+    {
+        internal static ManagerController? Active { get; set; }
+        internal static readonly List<Exception> Errors = new();
+        internal static bool IsEnabled => throw new NotSupportedException("The fixture does not mount the game view.");
+        internal static WorkshopUpdates Updates => throw new NotSupportedException("The fixture does not initialize Workshop state.");
+        internal static bool SamePath(string left, string right) => throw new NotSupportedException("The fixture does not mount the game view.");
+        internal static void Info(string message) => throw new NotSupportedException("The fixture does not mount the game view.");
+        internal static void Error(Exception error) => Errors.Add(error);
+        internal static void Guard(Action action) => action();
+    }
 }

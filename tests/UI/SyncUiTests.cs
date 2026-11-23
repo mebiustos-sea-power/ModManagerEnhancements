@@ -125,7 +125,7 @@ internal static class SyncUiTests
             for (int visit = 0; visit < 3; visit++)
             {
                 using var binding = new NativeSyncCommand(model);
-                using var confirmation = new SyncConfirmation(binding.Original, new ModText(visit == 0 ? "ja" : "en"),
+                using var confirmation = new SyncConfirmation(binding.Original, TestText.Create(visit == 0 ? "ja" : "en"),
                     _ => { }, _ => { }, _ => false, error => throw error);
                 binding.Replace(confirmation);
                 Require(ReferenceEquals(model.SyncDependenciesCommand, confirmation) && native.Subscribers == 1,
@@ -162,7 +162,7 @@ internal static class SyncUiTests
         internal Fixture(string language)
         {
             State = new State(language);
-            Confirmation = new SyncConfirmation(Native, new ModText(State.LanguageResourceHandler.Language), message =>
+            Confirmation = new SyncConfirmation(Native, TestText.Create(State.LanguageResourceHandler.Language), message =>
             {
                 Dialog = message; Shown++;
                 if (FailShow) throw new InvalidOperationException("Open failed.");

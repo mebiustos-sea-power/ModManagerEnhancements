@@ -22,6 +22,15 @@ public sealed class Plugin : IAnchorChainMod
     internal static WorkshopUpdates Updates => updates ??= new WorkshopUpdates(FileManager.Instance.Directories,
         Path.Combine(Application.persistentDataPath, "ModManagerEnhancements", "workshop-updates.txt"), Error);
     internal static ManagerController? Active { get; set; }
+    internal static bool IsEnabled
+    {
+        get
+        {
+            string package = Path.GetDirectoryName(typeof(Plugin).Assembly.Location)
+                ?? throw new InvalidOperationException("The mod package has no directory.");
+            return FileManager.Instance.Directories.Any(source => source.IsChecked && SamePath(source.DirectoryInfo.FullName, package));
+        }
+    }
 
     public void TriggerEntryPoint()
     {
@@ -65,7 +74,7 @@ public sealed class Plugin : IAnchorChainMod
     });
     private static void MainMenuCreated(MainMenuView __instance) => Guard(() =>
     {
-        _ = MainMenus.GetValue(__instance, view => new MainMenuUpdates(view, () => Updates.HasUnseenUpdates, Error));
+        _ = MainMenus.GetValue(__instance, view => new MainMenuUpdates(view, () => IsEnabled && Updates.HasUnseenUpdates, Error));
     });
     internal static bool SamePath(string left, string right) => string.Equals(Path.GetFullPath(left).TrimEnd('\\', '/'), Path.GetFullPath(right).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
     internal static void Info(string message) => Log.LogInfo(message);

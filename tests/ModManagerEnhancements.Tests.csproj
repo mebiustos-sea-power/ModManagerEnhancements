@@ -6,4 +6,7 @@
   </PropertyGroup>
   <ItemGroup><Compile Remove="UI\**\*.cs" /></ItemGroup>
   <ItemGroup><Compile Include="..\src\Core\**\*.cs" LinkBase="Core" /></ItemGroup>
+  <ItemGroup>
+    <Content Include="..\package\**\*.json" Link="%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

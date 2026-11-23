@@ -55,4 +55,10 @@ Copy-Item (Join-Path $PSScriptRoot 'src\bin\Release\netstandard2.1\ModManagerEnh
 Copy-Item (Join-Path $PSScriptRoot 'package\_info.ini') $taskPackage -Force
 Copy-Item (Join-Path $PSScriptRoot 'README.md') $taskPackage -Force
 Copy-Item (Join-Path $PSScriptRoot 'README.ja.md') $taskPackage -Force
+foreach ($taskLanguage in Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'package') -Directory -Filter 'language_*') {
+    Copy-Item -LiteralPath $taskLanguage.FullName -Destination $taskPackage -Recurse -Force
+}
+$taskDocumentation = Join-Path $taskPackage 'docs'
+New-Item -ItemType Directory -Force $taskDocumentation | Out-Null
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'docs\localization.md'), (Join-Path $PSScriptRoot 'docs\localization.ja.md') -Destination $taskDocumentation -Force
 Write-Output "Package: $taskPackage"

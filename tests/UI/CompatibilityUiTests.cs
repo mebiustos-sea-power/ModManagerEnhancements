@@ -137,7 +137,7 @@ internal static class CompatibilityUiTests
             File.WriteAllText(FirstFile, Original); File.WriteAllText(SecondFile, Original);
             Warned.ContextMenu.Items.Add(NativeAll); Warned.ContextMenu.Items.Add(NativeNone);
             Healthy.ContextMenu.Items.Add(new MenuItem()); Healthy.ContextMenu.Items.Add(new MenuItem());
-            Actions = new CompatibilityActions(Version, new ModText("ja"),
+            Actions = new CompatibilityActions(Version, TestText.Create("ja"),
                 message => { Dialog = message; Open.Add(message); }, message => Open.Remove(message), Open.Contains,
                 (_, restore) => { Reloads++; LastRestore = restore; }, Errors.Add);
         }
